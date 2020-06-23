@@ -2,7 +2,7 @@
 let imagemCenario;
 
 function preload() {
-    imagemCenario = loadImage('../img/cenario/floresta.png')
+    imagemCenario = loadImage('assets/img/cenario/floresta.png')
 }
 
 function setup() {
