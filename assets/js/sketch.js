@@ -13,5 +13,5 @@ function setup() {
 
 function draw() {
     background(imagemCenario)
-    image(imagemPersonagem, 0, 0, 220, 270, 0, 0, 220, 270)
+    image(imagemPersonagem, 0, 200, 110, 135, 0, 0, 220, 270)
 }
