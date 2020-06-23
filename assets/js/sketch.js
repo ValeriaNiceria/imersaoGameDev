@@ -12,6 +12,11 @@ function setup() {
 }
 
 function draw() {
-    background(imagemCenario, 0, 0, width, height)
+    background(imagemCenario, -50, 0, width, height)
+    background(imagemCenario, width-50, 0, width, height)
     image(imagemPersonagem, 0, height-135, 110, 135, 0, 0, 220, 270)
+}
+
+class Cenario {
+    
 }
