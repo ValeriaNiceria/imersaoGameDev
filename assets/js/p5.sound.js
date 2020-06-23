@@ -3818,4 +3818,4992 @@ function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterat
    *    rect(0, 0, width - 1, height/2);
    *    textAlign(CENTER, CENTER);
    *    fill(20);
-   *    text('restart', width/2, 
+   *    text('restart', width/2, 1 * height/4);
+   *    text('sustain', width/2, 3 * height/4);
+   *  }
+   *  function canvasPressed() {
+   *    if (mouseX < height/2) {
+   *      mySound.playMode('restart');
+   *    } else {
+   *      mySound.playMode('sustain');
+   *    }
+   *    mySound.play();
+   *  }
+   *
+   * </code></div>
+   */
+
+
+  p5.SoundFile.prototype.playMode = function (str) {
+    var s = str.toLowerCase(); 
+
+    if (s === 'restart' && this.buffer && this.bufferSourceNode) {
+      for (var i = 0; i < this.bufferSourceNodes.length - 1; i++) {
+        var now = p5sound.audiocontext.currentTime;
+        this.bufferSourceNodes[i].stop(now);
+      }
+    } 
+
+
+    if (s === 'restart' || s === 'sustain' || s === 'untildone') {
+      this.mode = s;
+    } else {
+      throw 'Invalid play mode. Must be either "restart" or "sustain"';
+    }
+  };
+  /**
+   *  Pauses a file that is currently playing. If the file is not
+   *  playing, then nothing will happen.
+   *
+   *  After pausing, .play() will resume from the paused
+   *  position.
+   *  If p5.SoundFile had been set to loop before it was paused,
+   *  it will continue to loop after it is unpaused with .play().
+   *
+   *  @method pause
+   *  @for p5.SoundFile
+   *  @param {Number} [startTime] (optional) schedule event to occur
+   *                               seconds from now
+   *  @example
+   *  <div><code>
+   *  let soundFile;
+   *  function preload() {
+   *    soundFormats('ogg', 'mp3');
+   *    soundFile = loadSound('assets/Damscray_-_Dancing_Tiger_02.mp3');
+   *  }
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(canvasPressed);
+   *    background(220);
+   *    text('tap to play, release to pause', 10, 20, width - 20);
+   *  }
+   *  function canvasPressed() {
+   *    soundFile.loop();
+   *    background(0, 200, 50);
+   *  }
+   *  function mouseReleased() {
+   *    soundFile.pause();
+   *    background(220);
+   *  }
+   *  </code>
+   *  </div>
+   */
+
+
+  p5.SoundFile.prototype.pause = function (startTime) {
+    var now = p5sound.audiocontext.currentTime;
+    var time = startTime || 0;
+    var pTime = time + now;
+
+    if (this.isPlaying() && this.buffer && this.bufferSourceNode) {
+      this._paused = true;
+      this._playing = false;
+      this.pauseTime = this.currentTime();
+      this.bufferSourceNode.stop(pTime);
+
+      this._counterNode.stop(pTime);
+
+      this._pauseTime = this.currentTime(); 
+    } else {
+      this._pauseTime = 0;
+    }
+  };
+  /**
+   * Loop the p5.SoundFile. Accepts optional parameters to set the
+   * playback rate, playback volume, loopStart, loopEnd.
+   *
+   * @method loop
+   * @for p5.SoundFile
+   * @param {Number} [startTime] (optional) schedule event to occur
+   *                             seconds from now
+   * @param {Number} [rate]        (optional) playback rate
+   * @param {Number} [amp]         (optional) playback volume
+   * @param {Number} [cueLoopStart] (optional) startTime in seconds
+   * @param {Number} [duration]  (optional) loop duration in seconds
+   * @example
+   *  <div><code>
+   *  let soundFile;
+   *  let loopStart = 0.5;
+   *  let loopDuration = 0.2;
+   *  function preload() {
+   *    soundFormats('ogg', 'mp3');
+   *    soundFile = loadSound('assets/Damscray_-_Dancing_Tiger_02.mp3');
+   *  }
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(canvasPressed);
+   *    background(220);
+   *    text('tap to play, release to pause', 10, 20, width - 20);
+   *  }
+   *  function canvasPressed() {
+   *    soundFile.loop();
+   *    background(0, 200, 50);
+   *  }
+   *  function mouseReleased() {
+   *    soundFile.pause();
+   *    background(220);
+   *  }
+   *  </code>
+   *  </div>
+   */
+
+
+  p5.SoundFile.prototype.loop = function (startTime, rate, amp, loopStart, duration) {
+    this._looping = true;
+    this.play(startTime, rate, amp, loopStart, duration);
+  };
+  /**
+   * Set a p5.SoundFile's looping flag to true or false. If the sound
+   * is currently playing, this change will take effect when it
+   * reaches the end of the current playback.
+   *
+   * @method setLoop
+   * @for p5.SoundFile
+   * @param {Boolean} Boolean   set looping to true or false
+   */
+
+
+  p5.SoundFile.prototype.setLoop = function (bool) {
+    if (bool === true) {
+      this._looping = true;
+    } else if (bool === false) {
+      this._looping = false;
+    } else {
+      throw 'Error: setLoop accepts either true or false';
+    }
+
+    if (this.bufferSourceNode) {
+      this.bufferSourceNode.loop = this._looping;
+      this._counterNode.loop = this._looping;
+    }
+  };
+  /**
+   * Returns 'true' if a p5.SoundFile is currently looping and playing, 'false' if not.
+   *
+   * @method isLooping
+   * @for p5.SoundFile
+   * @return {Boolean}
+   */
+
+
+  p5.SoundFile.prototype.isLooping = function () {
+    if (!this.bufferSourceNode) {
+      return false;
+    }
+
+    if (this._looping === true && this.isPlaying() === true) {
+      return true;
+    }
+
+    return false;
+  };
+  /**
+   *  Returns true if a p5.SoundFile is playing, false if not (i.e.
+   *  paused or stopped).
+   *
+   *  @method isPlaying
+   *  @for p5.SoundFile
+   *  @return {Boolean}
+   */
+
+
+  p5.SoundFile.prototype.isPlaying = function () {
+    return this._playing;
+  };
+  /**
+   *  Returns true if a p5.SoundFile is paused, false if not (i.e.
+   *  playing or stopped).
+   *
+   *  @method  isPaused
+   *  @for p5.SoundFile
+   *  @return {Boolean}
+   */
+
+
+  p5.SoundFile.prototype.isPaused = function () {
+    return this._paused;
+  };
+  /**
+   * Stop soundfile playback.
+   *
+   * @method stop
+   * @for p5.SoundFile
+   * @param {Number} [startTime] (optional) schedule event to occur
+   *                             in seconds from now
+   */
+
+
+  p5.SoundFile.prototype.stop = function (timeFromNow) {
+    var time = timeFromNow || 0;
+
+    if (this.mode === 'sustain' || this.mode === 'untildone') {
+      this.stopAll(time);
+      this._playing = false;
+      this.pauseTime = 0;
+      this._paused = false;
+    } else if (this.buffer && this.bufferSourceNode) {
+      var now = p5sound.audiocontext.currentTime;
+      var t = time || 0;
+      this.pauseTime = 0;
+      this.bufferSourceNode.stop(now + t);
+
+      this._counterNode.stop(now + t);
+
+      this._playing = false;
+      this._paused = false;
+    }
+  };
+  /**
+   *  Stop playback on all of this soundfile's sources.
+   *  @private
+   */
+
+
+  p5.SoundFile.prototype.stopAll = function (_time) {
+    var now = p5sound.audiocontext.currentTime;
+    var time = _time || 0;
+
+    if (this.buffer && this.bufferSourceNode) {
+      for (var i in this.bufferSourceNodes) {
+        var bufferSourceNode = this.bufferSourceNodes[i];
+
+        if (!!bufferSourceNode) {
+          try {
+            bufferSourceNode.stop(now + time);
+          } catch (e) {
+          }
+        }
+      }
+
+      this._counterNode.stop(now + time);
+
+      this._onended(this);
+    }
+  };
+  /**
+   *  Multiply the output volume (amplitude) of a sound file
+   *  between 0.0 (silence) and 1.0 (full volume).
+   *  1.0 is the maximum amplitude of a digital sound, so multiplying
+   *  by greater than 1.0 may cause digital distortion. To
+   *  fade, provide a <code>rampTime</code> parameter. For more
+   *  complex fades, see the Envelope class.
+   *
+   *  Alternately, you can pass in a signal source such as an
+   *  oscillator to modulate the amplitude with an audio signal.
+   *
+   *  @method  setVolume
+   *  @for p5.SoundFile
+   *  @param {Number|Object} volume  Volume (amplitude) between 0.0
+   *                                     and 1.0 or modulating signal/oscillator
+   *  @param {Number} [rampTime]  Fade for t seconds
+   *  @param {Number} [timeFromNow]  Schedule this event to happen at
+   *                                 t seconds in the future
+   */
+
+
+  p5.SoundFile.prototype.setVolume = function (vol, _rampTime, _tFromNow) {
+    if (typeof vol === 'number') {
+      var rampTime = _rampTime || 0;
+      var tFromNow = _tFromNow || 0;
+      var now = p5sound.audiocontext.currentTime;
+      var currentVol = this.output.gain.value;
+      this.output.gain.cancelScheduledValues(now + tFromNow);
+      this.output.gain.linearRampToValueAtTime(currentVol, now + tFromNow);
+      this.output.gain.linearRampToValueAtTime(vol, now + tFromNow + rampTime);
+    } else if (vol) {
+      vol.connect(this.output.gain);
+    } else {
+      return this.output.gain;
+    }
+  }; 
+
+
+  p5.SoundFile.prototype.amp = p5.SoundFile.prototype.setVolume; 
+
+  p5.SoundFile.prototype.fade = p5.SoundFile.prototype.setVolume;
+
+  p5.SoundFile.prototype.getVolume = function () {
+    return this.output.gain.value;
+  };
+  /**
+   * Set the stereo panning of a p5.sound object to
+   * a floating point number between -1.0 (left) and 1.0 (right).
+   * Default is 0.0 (center).
+   *
+   * @method pan
+   * @for p5.SoundFile
+   * @param {Number} [panValue]     Set the stereo panner
+   * @param {Number} [timeFromNow]  schedule this event to happen
+   *                                 seconds from now
+   * @example
+   * <div><code>
+   *  let ballX = 0;
+   *  let soundFile;
+   *
+   *  function preload() {
+   *    soundFormats('ogg', 'mp3');
+   *    soundFile = loadSound('assets/beatbox.mp3');
+   *  }
+   *
+   *  function draw() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(canvasPressed);
+   *    background(220);
+   *    ballX = constrain(mouseX, 0, width);
+   *    ellipse(ballX, height/2, 20, 20);
+   *  }
+   *
+   *  function canvasPressed(){
+   *    // map the ball's x location to a panning degree
+   *    // between -1.0 (left) and 1.0 (right)
+   *    let panning = map(ballX, 0., width,-1.0, 1.0);
+   *    soundFile.pan(panning);
+   *    soundFile.play();
+   *  }
+   *  </div></code>
+   */
+
+
+  p5.SoundFile.prototype.pan = function (pval, tFromNow) {
+    this.panPosition = pval;
+    this.panner.pan(pval, tFromNow);
+  };
+  /**
+   * Returns the current stereo pan position (-1.0 to 1.0)
+   *
+   * @method getPan
+   * @for p5.SoundFile
+   * @return {Number} Returns the stereo pan setting of the Oscillator
+   *                          as a number between -1.0 (left) and 1.0 (right).
+   *                          0.0 is center and default.
+   */
+
+
+  p5.SoundFile.prototype.getPan = function () {
+    return this.panPosition;
+  };
+  /**
+   *  Set the playback rate of a sound file. Will change the speed and the pitch.
+   *  Values less than zero will reverse the audio buffer.
+   *
+   *  @method rate
+   *  @for p5.SoundFile
+   *  @param {Number} [playbackRate]     Set the playback rate. 1.0 is normal,
+   *                                     .5 is half-speed, 2.0 is twice as fast.
+   *                                     Values less than zero play backwards.
+   *  @example
+   *  <div><code>
+   *  let mySound;
+   *
+   *  function preload() {
+   *    mySound = loadSound('assets/Damscray_DancingTiger.mp3');
+   *  }
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(canvasPressed);
+   *  }
+   *  function canvasPressed() {
+   *    mySound.loop();
+   *  }
+   *  function mouseReleased() {
+   *    mySound.pause();
+   *  }
+   *  function draw() {
+   *    background(220);
+   *
+   *    // Set the rate to a range between 0.1 and 4
+   *    // Changing the rate also alters the pitch
+   *    let playbackRate = map(mouseY, 0.1, height, 2, 0);
+   *    playbackRate = constrain(playbackRate, 0.01, 4);
+   *    mySound.rate(playbackRate);
+   *
+   *    line(0, mouseY, width, mouseY);
+   *    text('rate: ' + round(playbackRate * 100) + '%', 10, 20);
+   *  }
+   *
+   * </code>
+   * </div>
+   *
+   */
+
+
+  p5.SoundFile.prototype.rate = function (playbackRate) {
+    var reverse = false;
+
+    if (typeof playbackRate === 'undefined') {
+      return this.playbackRate;
+    }
+
+    this.playbackRate = playbackRate;
+
+    if (playbackRate === 0) {
+      playbackRate = 0.0000000000001;
+    } else if (playbackRate < 0 && !this.reversed) {
+      playbackRate = Math.abs(playbackRate);
+      reverse = true;
+    } else if (playbackRate > 0 && this.reversed) {
+      reverse = true;
+    }
+
+    if (this.bufferSourceNode) {
+      var now = p5sound.audiocontext.currentTime;
+      this.bufferSourceNode.playbackRate.cancelScheduledValues(now);
+      this.bufferSourceNode.playbackRate.linearRampToValueAtTime(Math.abs(playbackRate), now);
+
+      this._counterNode.playbackRate.cancelScheduledValues(now);
+
+      this._counterNode.playbackRate.linearRampToValueAtTime(Math.abs(playbackRate), now);
+    }
+
+    if (reverse) {
+      this.reverseBuffer();
+    }
+
+    return this.playbackRate;
+  }; 
+
+
+  p5.SoundFile.prototype.setPitch = function (num) {
+    var newPlaybackRate = midiToFreq(num) / midiToFreq(60);
+    this.rate(newPlaybackRate);
+  };
+
+  p5.SoundFile.prototype.getPlaybackRate = function () {
+    return this.playbackRate;
+  };
+  /**
+   * Returns the duration of a sound file in seconds.
+   *
+   * @method duration
+   * @for p5.SoundFile
+   * @return {Number} The duration of the soundFile in seconds.
+   */
+
+
+  p5.SoundFile.prototype.duration = function () {
+    if (this.buffer) {
+      return this.buffer.duration;
+    } else {
+      return 0;
+    }
+  };
+  /**
+   * Return the current position of the p5.SoundFile playhead, in seconds.
+   * Time is relative to the normal buffer direction, so if `reverseBuffer`
+   * has been called, currentTime will count backwards.
+   *
+   * @method currentTime
+   * @for p5.SoundFile
+   * @return {Number}   currentTime of the soundFile in seconds.
+   */
+
+
+  p5.SoundFile.prototype.currentTime = function () {
+    return this.reversed ? Math.abs(this._lastPos - this.buffer.length) / ac.sampleRate : this._lastPos / ac.sampleRate;
+  };
+  /**
+   * Move the playhead of a soundfile that is currently playing to a
+   * new position and a new duration, in seconds.
+   * If none are given, will reset the file to play entire duration
+   * from start to finish. To set the position of a soundfile that is
+   * not currently playing, use the `play` or `loop` methods.
+   *
+   * @method jump
+   * @for p5.SoundFile
+   * @param {Number} cueTime    cueTime of the soundFile in seconds.
+   * @param {Number} duration    duration in seconds.
+   */
+
+
+  p5.SoundFile.prototype.jump = function (cueTime, duration) {
+    if (cueTime < 0 || cueTime > this.buffer.duration) {
+      throw 'jump time out of range';
+    }
+
+    if (duration > this.buffer.duration - cueTime) {
+      throw 'end time out of range';
+    }
+
+    var cTime = cueTime || 0;
+    var dur = duration || undefined;
+
+    if (this.isPlaying()) {
+      this.stop(0);
+      this.play(0, this.playbackRate, this.output.gain.value, cTime, dur);
+    }
+  };
+  /**
+    * Return the number of channels in a sound file.
+    * For example, Mono = 1, Stereo = 2.
+    *
+    * @method channels
+    * @for p5.SoundFile
+    * @return {Number} [channels]
+    */
+
+
+  p5.SoundFile.prototype.channels = function () {
+    return this.buffer.numberOfChannels;
+  };
+  /**
+    * Return the sample rate of the sound file.
+    *
+    * @method sampleRate
+    * @for p5.SoundFile
+    * @return {Number} [sampleRate]
+    */
+
+
+  p5.SoundFile.prototype.sampleRate = function () {
+    return this.buffer.sampleRate;
+  };
+  /**
+    * Return the number of samples in a sound file.
+    * Equal to sampleRate * duration.
+    *
+    * @method frames
+    * @for p5.SoundFile
+    * @return {Number} [sampleCount]
+    */
+
+
+  p5.SoundFile.prototype.frames = function () {
+    return this.buffer.length;
+  };
+  /**
+   * Returns an array of amplitude peaks in a p5.SoundFile that can be
+   * used to draw a static waveform. Scans through the p5.SoundFile's
+   * audio buffer to find the greatest amplitudes. Accepts one
+   * parameter, 'length', which determines size of the array.
+   * Larger arrays result in more precise waveform visualizations.
+   *
+   * Inspired by Wavesurfer.js.
+   *
+   * @method  getPeaks
+   * @for p5.SoundFile
+   * @params {Number} [length] length is the size of the returned array.
+   *                          Larger length results in more precision.
+   *                          Defaults to 5*width of the browser window.
+   * @returns {Float32Array} Array of peaks.
+   */
+
+
+  p5.SoundFile.prototype.getPeaks = function (length) {
+    if (this.buffer) {
+      if (!length) {
+        length = window.width * 5;
+      }
+
+      if (this.buffer) {
+        var buffer = this.buffer;
+        var sampleSize = buffer.length / length;
+        var sampleStep = ~~(sampleSize / 10) || 1;
+        var channels = buffer.numberOfChannels;
+        var peaks = new Float32Array(Math.round(length));
+
+        for (var c = 0; c < channels; c++) {
+          var chan = buffer.getChannelData(c);
+
+          for (var i = 0; i < length; i++) {
+            var start = ~~(i * sampleSize);
+            var end = ~~(start + sampleSize);
+            var max = 0;
+
+            for (var j = start; j < end; j += sampleStep) {
+              var value = chan[j];
+
+              if (value > max) {
+                max = value; 
+              } else if (-value > max) {
+                max = value;
+              }
+            }
+
+            if (c === 0 || Math.abs(max) > peaks[i]) {
+              peaks[i] = max;
+            }
+          }
+        }
+
+        return peaks;
+      }
+    } else {
+      throw 'Cannot load peaks yet, buffer is not loaded';
+    }
+  };
+  /**
+   *  Reverses the p5.SoundFile's buffer source.
+   *  Playback must be handled separately (see example).
+   *
+   *  @method  reverseBuffer
+   *  @for p5.SoundFile
+   *  @example
+   *  <div><code>
+   *  let drum;
+   *  function preload() {
+   *    drum = loadSound('assets/drum.mp3');
+   *  }
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(canvasPressed);
+   *    background(220);
+   *    text('tap to play', 20, 20);
+   *  }
+   *
+   *  function canvasPressed() {
+   *    drum.stop();
+   *    drum.reverseBuffer();
+   *    drum.play();
+   *  }
+   * </code>
+   * </div>
+   */
+
+
+  p5.SoundFile.prototype.reverseBuffer = function () {
+    if (this.buffer) {
+      var currentPos = this._lastPos / ac.sampleRate;
+      var curVol = this.getVolume();
+      this.setVolume(0, 0.001);
+      var numChannels = this.buffer.numberOfChannels;
+
+      for (var i = 0; i < numChannels; i++) {
+        this.buffer.getChannelData(i).reverse();
+      } 
+
+
+      this.reversed = !this.reversed;
+
+      if (this.isPlaying() && currentPos) {
+        this.jump(this.duration() - currentPos);
+      }
+
+      this.setVolume(curVol, 0.001);
+    } else {
+      throw 'SoundFile is not done loading';
+    }
+  };
+  /**
+   *  Schedule an event to be called when the soundfile
+   *  reaches the end of a buffer. If the soundfile is
+   *  playing through once, this will be called when it
+   *  ends. If it is looping, it will be called when
+   *  stop is called.
+   *
+   *  @method  onended
+   *  @for p5.SoundFile
+   *  @param  {Function} callback function to call when the
+   *                              soundfile has ended.
+   */
+
+
+  p5.SoundFile.prototype.onended = function (callback) {
+    this._onended = callback;
+    return this;
+  };
+
+  p5.SoundFile.prototype.add = function () {
+  };
+
+  p5.SoundFile.prototype.dispose = function () {
+    var now = p5sound.audiocontext.currentTime; 
+
+    var index = p5sound.soundArray.indexOf(this);
+    p5sound.soundArray.splice(index, 1);
+    this.stop(now);
+
+    if (this.buffer && this.bufferSourceNode) {
+      for (var i = 0; i < this.bufferSourceNodes.length - 1; i++) {
+        if (this.bufferSourceNodes[i] !== null) {
+          this.bufferSourceNodes[i].disconnect();
+
+          try {
+            this.bufferSourceNodes[i].stop(now);
+          } catch (e) {
+            console.warn('no buffer source node to dispose');
+          }
+
+          this.bufferSourceNodes[i] = null;
+        }
+      }
+
+      if (this.isPlaying()) {
+        try {
+          this._counterNode.stop(now);
+        } catch (e) {
+          console.log(e);
+        }
+
+        this._counterNode = null;
+      }
+    }
+
+    if (this.output) {
+      this.output.disconnect();
+      this.output = null;
+    }
+
+    if (this.panner) {
+      this.panner.disconnect();
+      this.panner = null;
+    }
+  };
+  /**
+   * Connects the output of a p5sound object to input of another
+   * p5.sound object. For example, you may connect a p5.SoundFile to an
+   * FFT or an Effect. If no parameter is given, it will connect to
+   * the master output. Most p5sound objects connect to the master
+   * output when they are created.
+   *
+   * @method connect
+   * @for p5.SoundFile
+   * @param {Object} [object] Audio object that accepts an input
+   */
+
+
+  p5.SoundFile.prototype.connect = function (unit) {
+    if (!unit) {
+      this.panner.connect(p5sound.input);
+    } else {
+      if (unit.hasOwnProperty('input')) {
+        this.panner.connect(unit.input);
+      } else {
+        this.panner.connect(unit);
+      }
+    }
+  };
+  /**
+   * Disconnects the output of this p5sound object.
+   *
+   * @method disconnect
+   * @for p5.SoundFile
+   */
+
+
+  p5.SoundFile.prototype.disconnect = function () {
+    if (this.panner) {
+      this.panner.disconnect();
+    }
+  };
+  /**
+   */
+
+
+  p5.SoundFile.prototype.getLevel = function () {
+    console.warn('p5.SoundFile.getLevel has been removed from the library. Use p5.Amplitude instead');
+  };
+  /**
+   *  Reset the source for this SoundFile to a
+   *  new path (URL).
+   *
+   *  @method  setPath
+   *  @for p5.SoundFile
+   *  @param {String}   path     path to audio file
+   *  @param {Function} callback Callback
+   */
+
+
+  p5.SoundFile.prototype.setPath = function (p, callback) {
+    var path = p5.prototype._checkFileFormats(p);
+
+    this.url = path;
+    this.load(callback);
+  };
+  /**
+   *  Replace the current Audio Buffer with a new Buffer.
+   *
+   *  @method setBuffer
+   *  @for p5.SoundFile
+   *  @param {Array} buf Array of Float32 Array(s). 2 Float32 Arrays
+   *                     will create a stereo source. 1 will create
+   *                     a mono source.
+   */
+
+
+  p5.SoundFile.prototype.setBuffer = function (buf) {
+    var numChannels = buf.length;
+    var size = buf[0].length;
+    var newBuffer = ac.createBuffer(numChannels, size, ac.sampleRate);
+
+    if (!(buf[0] instanceof Float32Array)) {
+      buf[0] = new Float32Array(buf[0]);
+    }
+
+    for (var channelNum = 0; channelNum < numChannels; channelNum++) {
+      var channel = newBuffer.getChannelData(channelNum);
+      channel.set(buf[channelNum]);
+    }
+
+    this.buffer = newBuffer; 
+
+    this.panner.inputChannels(numChannels);
+  }; 
+
+
+  var _createCounterBuffer = function _createCounterBuffer(buffer) {
+    var len = buffer.length;
+    var audioBuf = ac.createBuffer(1, buffer.length, ac.sampleRate);
+    var arrayBuffer = audioBuf.getChannelData(0);
+
+    for (var index = 0; index < len; index++) {
+      arrayBuffer[index] = index;
+    }
+
+    return audioBuf;
+  }; 
+
+
+  p5.SoundFile.prototype._initCounterNode = function () {
+    var _this = this;
+
+    var self = this;
+    var now = ac.currentTime;
+    var cNode = ac.createBufferSource();
+    var workletBufferSize = safeBufferSize(256); 
+
+    if (self._workletNode) {
+      self._workletNode.disconnect();
+
+      delete self._workletNode;
+    }
+
+    self._workletNode = new AudioWorkletNode(ac, processorNames.soundFileProcessor, {
+      processorOptions: {
+        bufferSize: workletBufferSize
+      }
+    });
+
+    self._workletNode.port.onmessage = function (event) {
+      if (event.data.name === 'position') {
+        if (event.data.position === 0) {
+          return;
+        }
+
+        _this._lastPos = event.data.position; 
+
+        _this._onTimeUpdate(self._lastPos);
+      }
+    }; 
+
+
+    cNode.buffer = _createCounterBuffer(self.buffer);
+    cNode.playbackRate.setValueAtTime(self.playbackRate, now);
+    cNode.connect(self._workletNode);
+
+    self._workletNode.connect(p5.soundOut._silentNode);
+
+    return cNode;
+  }; 
+
+
+  p5.SoundFile.prototype._initSourceNode = function () {
+    var bufferSourceNode = ac.createBufferSource();
+    bufferSourceNode.buffer = this.buffer;
+    bufferSourceNode.playbackRate.value = this.playbackRate;
+    bufferSourceNode.connect(this.output);
+    return bufferSourceNode;
+  };
+  /**
+   *  processPeaks returns an array of timestamps where it thinks there is a beat.
+   *
+   *  This is an asynchronous function that processes the soundfile in an offline audio context,
+   *  and sends the results to your callback function.
+   *
+   *  The process involves running the soundfile through a lowpass filter, and finding all of the
+   *  peaks above the initial threshold. If the total number of peaks are below the minimum number of peaks,
+   *  it decreases the threshold and re-runs the analysis until either minPeaks or minThreshold are reached.
+   *
+   *  @method  processPeaks
+   *  @for p5.SoundFile
+   *  @param  {Function} callback       a function to call once this data is returned
+   *  @param  {Number}   [initThreshold] initial threshold defaults to 0.9
+   *  @param  {Number}   [minThreshold]   minimum threshold defaults to 0.22
+   *  @param  {Number}   [minPeaks]       minimum number of peaks defaults to 200
+   *  @return {Array}                  Array of timestamped peaks
+   */
+
+
+  p5.SoundFile.prototype.processPeaks = function (callback, _initThreshold, _minThreshold, _minPeaks) {
+    var bufLen = this.buffer.length;
+    var sampleRate = this.buffer.sampleRate;
+    var buffer = this.buffer;
+    var allPeaks = [];
+    var initialThreshold = _initThreshold || 0.9,
+        threshold = initialThreshold,
+        minThreshold = _minThreshold || 0.22,
+        minPeaks = _minPeaks || 200; 
+
+    var offlineContext = new window.OfflineAudioContext(1, bufLen, sampleRate); 
+
+    var source = offlineContext.createBufferSource();
+    source.buffer = buffer; 
+
+    var filter = offlineContext.createBiquadFilter();
+    filter.type = 'lowpass';
+    source.connect(filter);
+    filter.connect(offlineContext.destination); 
+
+    source.start(0);
+    offlineContext.startRendering(); 
+
+    offlineContext.oncomplete = function (e) {
+      if (!self.panner) return;
+      var filteredBuffer = e.renderedBuffer;
+      var bufferData = filteredBuffer.getChannelData(0); 
+
+      do {
+        allPeaks = getPeaksAtThreshold(bufferData, threshold);
+        threshold -= 0.005;
+      } while (Object.keys(allPeaks).length < minPeaks && threshold >= minThreshold); 
+
+
+      var intervalCounts = countIntervalsBetweenNearbyPeaks(allPeaks); 
+
+      var groups = groupNeighborsByTempo(intervalCounts, filteredBuffer.sampleRate); 
+
+      var topTempos = groups.sort(function (intA, intB) {
+        return intB.count - intA.count;
+      }).splice(0, 5); 
+
+      this.tempo = topTempos[0].tempo; 
+
+      var bpmVariance = 5;
+      var tempoPeaks = getPeaksAtTopTempo(allPeaks, topTempos[0].tempo, filteredBuffer.sampleRate, bpmVariance);
+      callback(tempoPeaks);
+    };
+  }; 
+
+
+  var Peak = function Peak(amp, i) {
+    this.sampleIndex = i;
+    this.amplitude = amp;
+    this.tempos = [];
+    this.intervals = [];
+  }; 
+
+
+  function getPeaksAtThreshold(data, threshold) {
+    var peaksObj = {};
+    var length = data.length;
+
+    for (var i = 0; i < length; i++) {
+      if (data[i] > threshold) {
+        var amp = data[i];
+        var peak = new Peak(amp, i);
+        peaksObj[i] = peak; 
+
+        i += 6000;
+      }
+
+      i++;
+    }
+
+    return peaksObj;
+  } 
+
+
+  function countIntervalsBetweenNearbyPeaks(peaksObj) {
+    var intervalCounts = [];
+    var peaksArray = Object.keys(peaksObj).sort();
+
+    for (var index = 0; index < peaksArray.length; index++) {
+      for (var i = 0; i < 10; i++) {
+        var startPeak = peaksObj[peaksArray[index]];
+        var endPeak = peaksObj[peaksArray[index + i]];
+
+        if (startPeak && endPeak) {
+          var startPos = startPeak.sampleIndex;
+          var endPos = endPeak.sampleIndex;
+          var interval = endPos - startPos; 
+
+          if (interval > 0) {
+            startPeak.intervals.push(interval);
+          } 
+
+
+          var foundInterval = intervalCounts.some(function (intervalCount) {
+            if (intervalCount.interval === interval) {
+              intervalCount.count++;
+              return intervalCount;
+            }
+          }); 
+
+          if (!foundInterval) {
+            intervalCounts.push({
+              interval: interval,
+              count: 1
+            });
+          }
+        }
+      }
+    }
+
+    return intervalCounts;
+  } 
+
+
+  function groupNeighborsByTempo(intervalCounts, sampleRate) {
+    var tempoCounts = [];
+    intervalCounts.forEach(function (intervalCount) {
+      try {
+        var theoreticalTempo = Math.abs(60 / (intervalCount.interval / sampleRate));
+        theoreticalTempo = mapTempo(theoreticalTempo);
+        var foundTempo = tempoCounts.some(function (tempoCount) {
+          if (tempoCount.tempo === theoreticalTempo) return tempoCount.count += intervalCount.count;
+        });
+
+        if (!foundTempo) {
+          if (isNaN(theoreticalTempo)) {
+            return;
+          }
+
+          tempoCounts.push({
+            tempo: Math.round(theoreticalTempo),
+            count: intervalCount.count
+          });
+        }
+      } catch (e) {
+        throw e;
+      }
+    });
+    return tempoCounts;
+  } 
+
+
+  function getPeaksAtTopTempo(peaksObj, tempo, sampleRate, bpmVariance) {
+    var peaksAtTopTempo = [];
+    var peaksArray = Object.keys(peaksObj).sort(); 
+
+    for (var i = 0; i < peaksArray.length; i++) {
+      var key = peaksArray[i];
+      var peak = peaksObj[key];
+
+      for (var j = 0; j < peak.intervals.length; j++) {
+        var intervalBPM = Math.round(Math.abs(60 / (peak.intervals[j] / sampleRate)));
+        intervalBPM = mapTempo(intervalBPM);
+
+        if (Math.abs(intervalBPM - tempo) < bpmVariance) {
+          peaksAtTopTempo.push(peak.sampleIndex / sampleRate);
+        }
+      }
+    } 
+
+
+    peaksAtTopTempo = peaksAtTopTempo.filter(function (peakTime, index, arr) {
+      var dif = arr[index + 1] - peakTime;
+
+      if (dif > 0.01) {
+        return true;
+      }
+    });
+    return peaksAtTopTempo;
+  } 
+
+
+  function mapTempo(theoreticalTempo) {
+    if (!isFinite(theoreticalTempo) || theoreticalTempo === 0) {
+      return;
+    } 
+
+
+    while (theoreticalTempo < 90) {
+      theoreticalTempo *= 2;
+    }
+
+    while (theoreticalTempo > 180 && theoreticalTempo > 90) {
+      theoreticalTempo /= 2;
+    }
+
+    return theoreticalTempo;
+  }
+
+
+  var Cue = function Cue(callback, time, id, val) {
+    this.callback = callback;
+    this.time = time;
+    this.id = id;
+    this.val = val;
+  };
+  /**
+   *  Schedule events to trigger every time a MediaElement
+   *  (audio/video) reaches a playback cue point.
+   *
+   *  Accepts a callback function, a time (in seconds) at which to trigger
+   *  the callback, and an optional parameter for the callback.
+   *
+   *  Time will be passed as the first parameter to the callback function,
+   *  and param will be the second parameter.
+   *
+   *
+   *  @method  addCue
+   *  @for p5.SoundFile
+   *  @param {Number}   time     Time in seconds, relative to this media
+   *                             element's playback. For example, to trigger
+   *                             an event every time playback reaches two
+   *                             seconds, pass in the number 2. This will be
+   *                             passed as the first parameter to
+   *                             the callback function.
+   *  @param {Function} callback Name of a function that will be
+   *                             called at the given time. The callback will
+   *                             receive time and (optionally) param as its
+   *                             two parameters.
+   *  @param {Object} [value]    An object to be passed as the
+   *                             second parameter to the
+   *                             callback function.
+   *  @return {Number} id ID of this cue,
+   *                      useful for removeCue(id)
+   *  @example
+   *  <div><code>
+   *  let mySound;
+   *  function preload() {
+   *    mySound = loadSound('assets/Damscray_DancingTiger.mp3');
+   *  }
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(canvasPressed);
+   *    background(220);
+   *    text('tap to play', 10, 20);
+   *
+   *    // schedule calls to changeText
+   *    mySound.addCue(0, changeText, "hello" );
+   *    mySound.addCue(0.5, changeText, "hello," );
+   *    mySound.addCue(1, changeText, "hello, p5!");
+   *    mySound.addCue(1.5, changeText, "hello, p5!!");
+   *    mySound.addCue(2, changeText, "hello, p5!!!!!");
+   *  }
+   *
+   *  function changeText(val) {
+   *    background(220);
+   *    text(val, 10, 20);
+   *  }
+   *
+   *  function canvasPressed() {
+   *    mySound.play();
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.SoundFile.prototype.addCue = function (time, callback, val) {
+    var id = this._cueIDCounter++;
+    var cue = new Cue(callback, time, id, val);
+
+    this._cues.push(cue); 
+
+
+    return id;
+  };
+  /**
+   *  Remove a callback based on its ID. The ID is returned by the
+   *  addCue method.
+   *
+   *  @method removeCue
+   *  @for p5.SoundFile
+   *  @param  {Number} id ID of the cue, as returned by addCue
+   */
+
+
+  p5.SoundFile.prototype.removeCue = function (id) {
+    var cueLength = this._cues.length;
+
+    for (var i = 0; i < cueLength; i++) {
+      var cue = this._cues[i];
+
+      if (cue.id === id) {
+        this._cues.splice(i, 1);
+
+        break;
+      }
+    }
+
+    if (this._cues.length === 0) {
+    }
+  };
+  /**
+   *  Remove all of the callbacks that had originally been scheduled
+   *  via the addCue method.
+   *
+   *  @method  clearCues
+   */
+
+
+  p5.SoundFile.prototype.clearCues = function () {
+    this._cues = []; 
+  }; 
+
+
+  p5.SoundFile.prototype._onTimeUpdate = function (position) {
+    var playbackTime = position / this.buffer.sampleRate;
+    var cueLength = this._cues.length;
+
+    for (var i = 0; i < cueLength; i++) {
+      var cue = this._cues[i];
+      var callbackTime = cue.time;
+      var val = cue.val;
+
+      if (~~this._prevUpdateTime <= callbackTime && callbackTime <= playbackTime) {
+        cue.callback(val);
+      }
+    }
+
+    this._prevUpdateTime = playbackTime;
+  };
+  /**
+   * Save a p5.SoundFile as a .wav file. The browser will prompt the user
+   * to download the file to their device. To upload a file to a server, see
+   * <a href="/docs/reference/#/p5.SoundFile/getBlob">getBlob</a>
+   *
+   * @method save
+   * @for p5.SoundFile
+   * @param  {String} [fileName]      name of the resulting .wav file.
+   * @example
+   *  <div><code>
+   *  let mySound;
+   *  function preload() {
+   *    mySound = loadSound('assets/doorbell.mp3');
+   *  }
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(canvasPressed);
+   *    background(220);
+   *    text('tap to download', 10, 20);
+   *  }
+   *
+   *  function canvasPressed() {
+   *    mySound.save('my cool filename');
+   *  }
+   * </code></div>
+   */
+
+
+  p5.SoundFile.prototype.save = function (fileName) {
+    p5.prototype.saveSound(this, fileName, 'wav');
+  };
+  /**
+   * This method is useful for sending a SoundFile to a server. It returns the
+   * .wav-encoded audio data as a "<a target="_blank" title="Blob reference at
+   * MDN" href="https://developer.mozilla.org/en-US/docs/Web/API/Blob">Blob</a>".
+   * A Blob is a file-like data object that can be uploaded to a server
+   * with an <a href="/docs/reference/#/p5/httpDo">http</a> request. We'll
+   * use the `httpDo` options object to send a POST request with some
+   * specific options: we encode the request as `multipart/form-data`,
+   * and attach the blob as one of the form values using `FormData`.
+   *
+   *
+   * @method getBlob
+   * @for p5.SoundFile
+   * @returns {Blob} A file-like data object
+   * @example
+   *  <div><code>
+   *  function preload() {
+   *    mySound = loadSound('assets/doorbell.mp3');
+   *  }
+   *
+   *  function setup() {
+   *    noCanvas();
+   *    let soundBlob = mySound.getBlob();
+   *
+   *    // Now we can send the blob to a server...
+   *    let serverUrl = 'https://jsonplaceholder.typicode.com/posts';
+   *    let httpRequestOptions = {
+   *      method: 'POST',
+   *      body: new FormData().append('soundBlob', soundBlob),
+   *      headers: new Headers({
+   *        'Content-Type': 'multipart/form-data'
+   *      })
+   *    };
+   *    httpDo(serverUrl, httpRequestOptions);
+   *
+   *    // We can also create an `ObjectURL` pointing to the Blob
+   *    let blobUrl = URL.createObjectURL(soundBlob);
+   *
+   *    // The `<Audio>` Element accepts Object URL's
+   *    createAudio(blobUrl).showControls();
+   *
+   *    createDiv();
+   *
+   *    // The ObjectURL exists as long as this tab is open
+   *    let input = createInput(blobUrl);
+   *    input.attribute('readonly', true);
+   *    input.mouseClicked(function() { input.elt.select() });
+   *  }
+   *
+   * </code></div>
+   */
+
+
+  p5.SoundFile.prototype.getBlob = function () {
+    var dataView = convertToWav(this.buffer);
+    return new Blob([dataView], {
+      type: 'audio/wav'
+    });
+  }; 
+
+
+  function _clearOnEnd(e) {
+    var thisBufferSourceNode = e.target;
+    var soundFile = this; 
+
+    thisBufferSourceNode._playing = false;
+    thisBufferSourceNode.removeEventListener('ended', soundFile._clearOnEnd); 
+
+    soundFile._onended(soundFile); 
+
+
+    soundFile.bufferSourceNodes.map(function (_, i) {
+      return i;
+    }).reverse().forEach(function (i) {
+      var n = soundFile.bufferSourceNodes[i];
+
+      if (n._playing === false) {
+        soundFile.bufferSourceNodes.splice(i, 1);
+      }
+    });
+
+    if (soundFile.bufferSourceNodes.length === 0) {
+      soundFile._playing = false;
+    }
+  }
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var p5sound = __webpack_require__(1);
+
+  var _require = __webpack_require__(6),
+      safeBufferSize = _require.safeBufferSize;
+
+  var processorNames = __webpack_require__(10);
+  /**
+   *  Amplitude measures volume between 0.0 and 1.0.
+   *  Listens to all p5sound by default, or use setInput()
+   *  to listen to a specific sound source. Accepts an optional
+   *  smoothing value, which defaults to 0.
+   *
+   *  @class p5.Amplitude
+   *  @constructor
+   *  @param {Number} [smoothing] between 0.0 and .999 to smooth
+   *                             amplitude readings (defaults to 0)
+   *  @example
+   *  <div><code>
+   *  let sound, amplitude;
+   *
+   *  function preload(){
+   *    sound = loadSound('assets/beat.mp3');
+   *  }
+   *  function setup() {
+   *    let cnv = createCanvas(100,100);
+   *    cnv.mouseClicked(toggleSound);
+   *    amplitude = new p5.Amplitude();
+   *  }
+   *
+   *  function draw() {
+   *    background(220);
+   *    text('tap to play', 20, 20);
+   *
+   *    let level = amplitude.getLevel();
+   *    let size = map(level, 0, 1, 0, 200);
+   *    ellipse(width/2, height/2, size, size);
+   *  }
+   *
+   *  function toggleSound() {
+   *    if (sound.isPlaying() ){
+   *      sound.stop();
+   *    } else {
+   *      sound.play();
+   *    }
+   *  }
+   *
+   *  </code></div>
+   */
+
+
+  p5.Amplitude = function (smoothing) {
+    this.bufferSize = safeBufferSize(2048); 
+
+    this.audiocontext = p5sound.audiocontext;
+    this._workletNode = new AudioWorkletNode(this.audiocontext, processorNames.amplitudeProcessor, {
+      outputChannelCount: [1],
+      parameterData: {
+        smoothing: smoothing || 0
+      },
+      processorOptions: {
+        normalize: false,
+        smoothing: smoothing || 0,
+        numInputChannels: 2,
+        bufferSize: this.bufferSize
+      }
+    });
+
+    this._workletNode.port.onmessage = function (event) {
+      if (event.data.name === 'amplitude') {
+        this.volume = event.data.volume;
+        this.volNorm = event.data.volNorm;
+        this.stereoVol = event.data.stereoVol;
+        this.stereoVolNorm = event.data.stereoVolNorm;
+      }
+    }.bind(this); 
+
+
+    this.input = this._workletNode;
+    this.output = this.audiocontext.createGain(); 
+
+    this.volume = 0;
+    this.volNorm = 0;
+    this.stereoVol = [0, 0];
+    this.stereoVolNorm = [0, 0];
+    this.normalize = false;
+
+    this._workletNode.connect(this.output);
+
+    this.output.gain.value = 0; 
+
+    this.output.connect(this.audiocontext.destination); 
+
+    p5sound.meter.connect(this._workletNode); 
+
+    p5sound.soundArray.push(this);
+  };
+  /**
+   *  Connects to the p5sound instance (master output) by default.
+   *  Optionally, you can pass in a specific source (i.e. a soundfile).
+   *
+   *  @method setInput
+   *  @for p5.Amplitude
+   *  @param {soundObject|undefined} [snd] set the sound source
+   *                                       (optional, defaults to
+   *                                       master output)
+   *  @param {Number|undefined} [smoothing] a range between 0.0 and 1.0
+   *                                        to smooth amplitude readings
+   *  @example
+   *  <div><code>
+   *  function preload(){
+   *    sound1 = loadSound('assets/beat.mp3');
+   *    sound2 = loadSound('assets/drum.mp3');
+   *  }
+   *  function setup(){
+   *    cnv = createCanvas(100, 100);
+   *    cnv.mouseClicked(toggleSound);
+   *
+   *    amplitude = new p5.Amplitude();
+   *    amplitude.setInput(sound2);
+   *  }
+   *
+   *  function draw() {
+   *    background(220);
+   *    text('tap to play', 20, 20);
+   *
+   *    let level = amplitude.getLevel();
+   *    let size = map(level, 0, 1, 0, 200);
+   *    ellipse(width/2, height/2, size, size);
+   *  }
+   *
+   *  function toggleSound(){
+   *    if (sound1.isPlaying() && sound2.isPlaying()) {
+   *      sound1.stop();
+   *      sound2.stop();
+   *    } else {
+   *      sound1.play();
+   *      sound2.play();
+   *    }
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Amplitude.prototype.setInput = function (source, smoothing) {
+    p5sound.meter.disconnect();
+
+    if (smoothing) {
+      this._workletNode.parameters.get('smoothing').value = smoothing;
+    } 
+
+
+    if (source == null) {
+      console.log('Amplitude input source is not ready! Connecting to master output instead');
+      p5sound.meter.connect(this._workletNode);
+    } 
+    else if (source instanceof p5.Signal) {
+        source.output.connect(this._workletNode);
+      } 
+      else if (source) {
+          source.connect(this._workletNode);
+
+          this._workletNode.disconnect();
+
+          this._workletNode.connect(this.output);
+        } 
+        else {
+            p5sound.meter.connect(this._workletNode);
+          }
+  };
+
+  p5.Amplitude.prototype.connect = function (unit) {
+    if (unit) {
+      if (unit.hasOwnProperty('input')) {
+        this.output.connect(unit.input);
+      } else {
+        this.output.connect(unit);
+      }
+    } else {
+      this.output.connect(this.panner.connect(p5sound.input));
+    }
+  };
+
+  p5.Amplitude.prototype.disconnect = function () {
+    if (this.output) {
+      this.output.disconnect();
+    }
+  };
+  /**
+   *  Returns a single Amplitude reading at the moment it is called.
+   *  For continuous readings, run in the draw loop.
+   *
+   *  @method getLevel
+   *  @for p5.Amplitude
+   *  @param {Number} [channel] Optionally return only channel 0 (left) or 1 (right)
+   *  @return {Number}       Amplitude as a number between 0.0 and 1.0
+   *  @example
+   *  <div><code>
+   *  function preload(){
+   *    sound = loadSound('assets/beat.mp3');
+   *  }
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mouseClicked(toggleSound);
+   *    amplitude = new p5.Amplitude();
+   *  }
+   *
+   *  function draw() {
+   *    background(220, 150);
+   *    textAlign(CENTER);
+   *    text('tap to play', width/2, 20);
+   *
+   *    let level = amplitude.getLevel();
+   *    let size = map(level, 0, 1, 0, 200);
+   *    ellipse(width/2, height/2, size, size);
+   *  }
+   *
+   *  function toggleSound(){
+   *    if (sound.isPlaying()) {
+   *      sound.stop();
+   *    } else {
+   *      sound.play();
+   *    }
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Amplitude.prototype.getLevel = function (channel) {
+    if (typeof channel !== 'undefined') {
+      if (this.normalize) {
+        return this.stereoVolNorm[channel];
+      } else {
+        return this.stereoVol[channel];
+      }
+    } else if (this.normalize) {
+      return this.volNorm;
+    } else {
+      return this.volume;
+    }
+  };
+  /**
+   * Determines whether the results of Amplitude.process() will be
+   * Normalized. To normalize, Amplitude finds the difference the
+   * loudest reading it has processed and the maximum amplitude of
+   * 1.0. Amplitude adds this difference to all values to produce
+   * results that will reliably map between 0.0 and 1.0. However,
+   * if a louder moment occurs, the amount that Normalize adds to
+   * all the values will change. Accepts an optional boolean parameter
+   * (true or false). Normalizing is off by default.
+   *
+   * @method toggleNormalize
+   * @for p5.Amplitude
+   * @param {boolean} [boolean] set normalize to true (1) or false (0)
+   */
+
+
+  p5.Amplitude.prototype.toggleNormalize = function (bool) {
+    if (typeof bool === 'boolean') {
+      this.normalize = bool;
+    } else {
+      this.normalize = !this.normalize;
+    }
+
+    this._workletNode.port.postMessage({
+      name: 'toggleNormalize',
+      normalize: this.normalize
+    });
+  };
+  /**
+   *  Smooth Amplitude analysis by averaging with the last analysis
+   *  frame. Off by default.
+   *
+   *  @method smooth
+   *  @for p5.Amplitude
+   *  @param {Number} set smoothing from 0.0 <= 1
+   */
+
+
+  p5.Amplitude.prototype.smooth = function (s) {
+    if (s >= 0 && s < 1) {
+      this._workletNode.port.postMessage({
+        name: 'smoothing',
+        smoothing: s
+      });
+    } else {
+      console.log('Error: smoothing must be between 0 and 1');
+    }
+  };
+
+  p5.Amplitude.prototype.dispose = function () {
+    var index = p5sound.soundArray.indexOf(this);
+    p5sound.soundArray.splice(index, 1);
+
+    if (this.input) {
+      this.input.disconnect();
+      delete this.input;
+    }
+
+    if (this.output) {
+      this.output.disconnect();
+      delete this.output;
+    }
+
+    this._workletNode.disconnect();
+
+    delete this._workletNode;
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var p5sound = __webpack_require__(1);
+  /**
+   *  <p>FFT (Fast Fourier Transform) is an analysis algorithm that
+   *  isolates individual
+   *  <a href="https://en.wikipedia.org/wiki/Audio_frequency">
+   *  audio frequencies</a> within a waveform.</p>
+   *
+   *  <p>Once instantiated, a p5.FFT object can return an array based on
+   *  two types of analyses: <br> • <code>FFT.waveform()</code> computes
+   *  amplitude values along the time domain. The array indices correspond
+   *  to samples across a brief moment in time. Each value represents
+   *  amplitude of the waveform at that sample of time.<br>
+   *  • <code>FFT.analyze() </code> computes amplitude values along the
+   *  frequency domain. The array indices correspond to frequencies (i.e.
+   *  pitches), from the lowest to the highest that humans can hear. Each
+   *  value represents amplitude at that slice of the frequency spectrum.
+   *  Use with <code>getEnergy()</code> to measure amplitude at specific
+   *  frequencies, or within a range of frequencies. </p>
+   *
+   *  <p>FFT analyzes a very short snapshot of sound called a sample
+   *  buffer. It returns an array of amplitude measurements, referred
+   *  to as <code>bins</code>. The array is 1024 bins long by default.
+   *  You can change the bin array length, but it must be a power of 2
+   *  between 16 and 1024 in order for the FFT algorithm to function
+   *  correctly. The actual size of the FFT buffer is twice the
+   *  number of bins, so given a standard sample rate, the buffer is
+   *  2048/44100 seconds long.</p>
+   *
+   *
+   *  @class p5.FFT
+   *  @constructor
+   *  @param {Number} [smoothing]   Smooth results of Freq Spectrum.
+   *                                0.0 < smoothing < 1.0.
+   *                                Defaults to 0.8.
+   *  @param {Number} [bins]    Length of resulting array.
+   *                            Must be a power of two between
+   *                            16 and 1024. Defaults to 1024.
+   *  @example
+   *  <div><code>
+   *  function preload(){
+   *    sound = loadSound('assets/Damscray_DancingTiger.mp3');
+   *  }
+   *
+   *  function setup(){
+   *    let cnv = createCanvas(100,100);
+   *    cnv.mouseClicked(togglePlay);
+   *    fft = new p5.FFT();
+   *    sound.amp(0.2);
+   *  }
+   *
+   *  function draw(){
+   *    background(220);
+   *
+   *    let spectrum = fft.analyze();
+   *    noStroke();
+   *    fill(255, 0, 255);
+   *    for (let i = 0; i< spectrum.length; i++){
+   *      let x = map(i, 0, spectrum.length, 0, width);
+   *      let h = -height + map(spectrum[i], 0, 255, height, 0);
+   *      rect(x, height, width / spectrum.length, h )
+   *    }
+   *
+   *    let waveform = fft.waveform();
+   *    noFill();
+   *    beginShape();
+   *    stroke(20);
+   *    for (let i = 0; i < waveform.length; i++){
+   *      let x = map(i, 0, waveform.length, 0, width);
+   *      let y = map( waveform[i], -1, 1, 0, height);
+   *      vertex(x,y);
+   *    }
+   *    endShape();
+   *
+   *    text('tap to play', 20, 20);
+   *  }
+   *
+   *  function togglePlay() {
+   *    if (sound.isPlaying()) {
+   *      sound.pause();
+   *    } else {
+   *      sound.loop();
+   *    }
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.FFT = function (smoothing, bins) {
+    this.input = this.analyser = p5sound.audiocontext.createAnalyser();
+    Object.defineProperties(this, {
+      bins: {
+        get: function get() {
+          return this.analyser.fftSize / 2;
+        },
+        set: function set(b) {
+          this.analyser.fftSize = b * 2;
+        },
+        configurable: true,
+        enumerable: true
+      },
+      smoothing: {
+        get: function get() {
+          return this.analyser.smoothingTimeConstant;
+        },
+        set: function set(s) {
+          this.analyser.smoothingTimeConstant = s;
+        },
+        configurable: true,
+        enumerable: true
+      }
+    }); 
+
+    this.smooth(smoothing);
+    this.bins = bins || 1024; 
+
+    p5sound.fftMeter.connect(this.analyser);
+    this.freqDomain = new Uint8Array(this.analyser.frequencyBinCount);
+    this.timeDomain = new Uint8Array(this.analyser.frequencyBinCount); 
+
+    this.bass = [20, 140];
+    this.lowMid = [140, 400];
+    this.mid = [400, 2600];
+    this.highMid = [2600, 5200];
+    this.treble = [5200, 14000]; 
+
+    p5sound.soundArray.push(this);
+  };
+  /**
+   *  Set the input source for the FFT analysis. If no source is
+   *  provided, FFT will analyze all sound in the sketch.
+   *
+   *  @method  setInput
+   *  @for p5.FFT
+   *  @param {Object} [source] p5.sound object (or web audio API source node)
+   */
+
+
+  p5.FFT.prototype.setInput = function (source) {
+    if (!source) {
+      p5sound.fftMeter.connect(this.analyser);
+    } else {
+      if (source.output) {
+        source.output.connect(this.analyser);
+      } else if (source.connect) {
+        source.connect(this.analyser);
+      }
+
+      p5sound.fftMeter.disconnect();
+    }
+  };
+  /**
+   *  Returns an array of amplitude values (between -1.0 and +1.0) that represent
+   *  a snapshot of amplitude readings in a single buffer. Length will be
+   *  equal to bins (defaults to 1024). Can be used to draw the waveform
+   *  of a sound.
+   *
+   *  @method waveform
+   *  @for p5.FFT
+   *  @param {Number} [bins]    Must be a power of two between
+   *                            16 and 1024. Defaults to 1024.
+   *  @param {String} [precision] If any value is provided, will return results
+   *                              in a Float32 Array which is more precise
+   *                              than a regular array.
+   *  @return {Array}  Array    Array of amplitude values (-1 to 1)
+   *                            over time. Array length = bins.
+   *
+   */
+
+
+  p5.FFT.prototype.waveform = function () {
+    var bins, mode, normalArray;
+
+    for (var i = 0; i < arguments.length; i++) {
+      if (typeof arguments[i] === 'number') {
+        bins = arguments[i];
+        this.analyser.fftSize = bins * 2;
+      }
+
+      if (typeof arguments[i] === 'string') {
+        mode = arguments[i];
+      }
+    } 
+
+
+    if (mode && !p5.prototype._isSafari()) {
+      timeToFloat(this, this.timeDomain);
+      this.analyser.getFloatTimeDomainData(this.timeDomain);
+      return this.timeDomain;
+    } else {
+      timeToInt(this, this.timeDomain);
+      this.analyser.getByteTimeDomainData(this.timeDomain);
+      var normalArray = new Array();
+
+      for (var j = 0; j < this.timeDomain.length; j++) {
+        var scaled = p5.prototype.map(this.timeDomain[j], 0, 255, -1, 1);
+        normalArray.push(scaled);
+      }
+
+      return normalArray;
+    }
+  };
+  /**
+   *  Returns an array of amplitude values (between 0 and 255)
+   *  across the frequency spectrum. Length is equal to FFT bins
+   *  (1024 by default). The array indices correspond to frequencies
+   *  (i.e. pitches), from the lowest to the highest that humans can
+   *  hear. Each value represents amplitude at that slice of the
+   *  frequency spectrum. Must be called prior to using
+   *  <code>getEnergy()</code>.
+   *
+   *  @method analyze
+   *  @for p5.FFT
+   *  @param {Number} [bins]    Must be a power of two between
+   *                             16 and 1024. Defaults to 1024.
+   *  @param {Number} [scale]    If "dB," returns decibel
+   *                             float measurements between
+   *                             -140 and 0 (max).
+   *                             Otherwise returns integers from 0-255.
+   *  @return {Array} spectrum    Array of energy (amplitude/volume)
+   *                              values across the frequency spectrum.
+   *                              Lowest energy (silence) = 0, highest
+   *                              possible is 255.
+   *  @example
+   *  <div><code>
+   *  let osc, fft;
+   *
+   *  function setup(){
+   *    let cnv = createCanvas(100,100);
+   *    cnv.mousePressed(startSound);
+   *    osc = new p5.Oscillator();
+   *    osc.amp(0);
+   *    fft = new p5.FFT();
+   *  }
+   *
+   *  function draw(){
+   *    background(220);
+   *
+   *    let freq = map(mouseX, 0, windowWidth, 20, 10000);
+   *    freq = constrain(freq, 1, 20000);
+   *    osc.freq(freq);
+   *
+   *    let spectrum = fft.analyze();
+   *    noStroke();
+   *    fill(255, 0, 255);
+   *    for (let i = 0; i< spectrum.length; i++){
+   *      let x = map(i, 0, spectrum.length, 0, width);
+   *      let h = -height + map(spectrum[i], 0, 255, height, 0);
+   *      rect(x, height, width / spectrum.length, h );
+   *    }
+   *
+   *    stroke(255);
+   *    if (!osc.started) {
+   *      text('tap here and drag to change frequency', 10, 20, width - 20);
+   *    } else {
+   *      text(round(freq)+'Hz', 10, 20);
+   *    }
+   *  }
+   *
+   *  function startSound() {
+   *    osc.start();
+   *    osc.amp(0.5, 0.2);
+   *  }
+   *
+   *  function mouseReleased() {
+   *    osc.amp(0, 0.2);
+   *  }
+   *  </code></div>
+   *
+   *
+   */
+
+
+  p5.FFT.prototype.analyze = function () {
+    var mode;
+
+    for (var i = 0; i < arguments.length; i++) {
+      if (typeof arguments[i] === 'number') {
+        this.bins = arguments[i];
+        this.analyser.fftSize = this.bins * 2;
+      }
+
+      if (typeof arguments[i] === 'string') {
+        mode = arguments[i];
+      }
+    }
+
+    if (mode && mode.toLowerCase() === 'db') {
+      freqToFloat(this);
+      this.analyser.getFloatFrequencyData(this.freqDomain);
+      return this.freqDomain;
+    } else {
+      freqToInt(this, this.freqDomain);
+      this.analyser.getByteFrequencyData(this.freqDomain);
+      var normalArray = Array.apply([], this.freqDomain);
+      return normalArray;
+    }
+  };
+  /**
+   *  Returns the amount of energy (volume) at a specific
+   *  <a href="https://en.wikipedia.org/wiki/Audio_frequency" target="_blank">
+   *  frequency</a>, or the average amount of energy between two
+   *  frequencies. Accepts Number(s) corresponding
+   *  to frequency (in Hz), or a String corresponding to predefined
+   *  frequency ranges ("bass", "lowMid", "mid", "highMid", "treble").
+   *  Returns a range between 0 (no energy/volume at that frequency) and
+   *  255 (maximum energy).
+   *  <em>NOTE: analyze() must be called prior to getEnergy(). Analyze()
+   *  tells the FFT to analyze frequency data, and getEnergy() uses
+   *  the results determine the value at a specific frequency or
+   *  range of frequencies.</em></p>
+   *
+   *  @method  getEnergy
+   *  @for p5.FFT
+   *  @param  {Number|String} frequency1   Will return a value representing
+   *                                energy at this frequency. Alternately,
+   *                                the strings "bass", "lowMid" "mid",
+   *                                "highMid", and "treble" will return
+   *                                predefined frequency ranges.
+   *  @param  {Number} [frequency2] If a second frequency is given,
+   *                                will return average amount of
+   *                                energy that exists between the
+   *                                two frequencies.
+   *  @return {Number}   Energy   Energy (volume/amplitude) from
+   *                              0 and 255.
+   *
+   */
+
+
+  p5.FFT.prototype.getEnergy = function (frequency1, frequency2) {
+    var nyquist = p5sound.audiocontext.sampleRate / 2;
+
+    if (frequency1 === 'bass') {
+      frequency1 = this.bass[0];
+      frequency2 = this.bass[1];
+    } else if (frequency1 === 'lowMid') {
+      frequency1 = this.lowMid[0];
+      frequency2 = this.lowMid[1];
+    } else if (frequency1 === 'mid') {
+      frequency1 = this.mid[0];
+      frequency2 = this.mid[1];
+    } else if (frequency1 === 'highMid') {
+      frequency1 = this.highMid[0];
+      frequency2 = this.highMid[1];
+    } else if (frequency1 === 'treble') {
+      frequency1 = this.treble[0];
+      frequency2 = this.treble[1];
+    }
+
+    if (typeof frequency1 !== 'number') {
+      throw 'invalid input for getEnergy()';
+    } else if (!frequency2) {
+      var index = Math.round(frequency1 / nyquist * this.freqDomain.length);
+      return this.freqDomain[index];
+    } else if (frequency1 && frequency2) {
+      if (frequency1 > frequency2) {
+        var swap = frequency2;
+        frequency2 = frequency1;
+        frequency1 = swap;
+      }
+
+      var lowIndex = Math.round(frequency1 / nyquist * this.freqDomain.length);
+      var highIndex = Math.round(frequency2 / nyquist * this.freqDomain.length);
+      var total = 0;
+      var numFrequencies = 0; 
+
+      for (var i = lowIndex; i <= highIndex; i++) {
+        total += this.freqDomain[i];
+        numFrequencies += 1;
+      } 
+
+
+      var toReturn = total / numFrequencies;
+      return toReturn;
+    } else {
+      throw 'invalid input for getEnergy()';
+    }
+  }; 
+
+
+  p5.FFT.prototype.getFreq = function (freq1, freq2) {
+    console.log('getFreq() is deprecated. Please use getEnergy() instead.');
+    var x = this.getEnergy(freq1, freq2);
+    return x;
+  };
+  /**
+   *  Returns the
+   *  <a href="http://en.wikipedia.org/wiki/Spectral_centroid" target="_blank">
+   *  spectral centroid</a> of the input signal.
+   *  <em>NOTE: analyze() must be called prior to getCentroid(). Analyze()
+   *  tells the FFT to analyze frequency data, and getCentroid() uses
+   *  the results determine the spectral centroid.</em></p>
+   *
+   *  @method  getCentroid
+   *  @for p5.FFT
+   *  @return {Number}   Spectral Centroid Frequency   Frequency of the spectral centroid in Hz.
+   *
+   *
+   * @example
+   *  <div><code>
+   * function setup(){
+   *  cnv = createCanvas(100,100);
+   *  cnv.mousePressed(userStartAudio);
+   *  sound = new p5.AudioIn();
+   *  sound.start();
+   *  fft = new p5.FFT();
+   *  sound.connect(fft);
+   *}
+   *
+   *function draw() {
+   *  if (getAudioContext().state !== 'running') {
+   *    background(220);
+   *    text('tap here and enable mic to begin', 10, 20, width - 20);
+   *    return;
+   *  }
+   *  let centroidplot = 0.0;
+   *  let spectralCentroid = 0;
+   *
+   *  background(0);
+   *  stroke(0,255,0);
+   *  let spectrum = fft.analyze();
+   *  fill(0,255,0); // spectrum is green
+   *
+   *  //draw the spectrum
+   *  for (let i = 0; i < spectrum.length; i++){
+   *    let x = map(log(i), 0, log(spectrum.length), 0, width);
+   *    let h = map(spectrum[i], 0, 255, 0, height);
+   *    let rectangle_width = (log(i+1)-log(i))*(width/log(spectrum.length));
+   *    rect(x, height, rectangle_width, -h )
+   *  }
+   *  let nyquist = 22050;
+   *
+   *  // get the centroid
+   *  spectralCentroid = fft.getCentroid();
+   *
+   *  // the mean_freq_index calculation is for the display.
+   *  let mean_freq_index = spectralCentroid/(nyquist/spectrum.length);
+   *
+   *  centroidplot = map(log(mean_freq_index), 0, log(spectrum.length), 0, width);
+   *
+   *  stroke(255,0,0); // the line showing where the centroid is will be red
+   *
+   *  rect(centroidplot, 0, width / spectrum.length, height)
+   *  noStroke();
+   *  fill(255,255,255);  // text is white
+   *  text('centroid: ', 10, 20);
+   *  text(round(spectralCentroid)+' Hz', 10, 40);
+   *}
+   * </code></div>
+   */
+
+
+  p5.FFT.prototype.getCentroid = function () {
+    var nyquist = p5sound.audiocontext.sampleRate / 2;
+    var cumulative_sum = 0;
+    var centroid_normalization = 0;
+
+    for (var i = 0; i < this.freqDomain.length; i++) {
+      cumulative_sum += i * this.freqDomain[i];
+      centroid_normalization += this.freqDomain[i];
+    }
+
+    var mean_freq_index = 0;
+
+    if (centroid_normalization !== 0) {
+      mean_freq_index = cumulative_sum / centroid_normalization;
+    }
+
+    var spec_centroid_freq = mean_freq_index * (nyquist / this.freqDomain.length);
+    return spec_centroid_freq;
+  };
+  /**
+   *  Smooth FFT analysis by averaging with the last analysis frame.
+   *
+   *  @method smooth
+   *  @param {Number} smoothing    0.0 < smoothing < 1.0.
+   *                               Defaults to 0.8.
+   */
+
+
+  p5.FFT.prototype.smooth = function (s) {
+    if (typeof s !== 'undefined') {
+      this.smoothing = s;
+    }
+
+    return this.smoothing;
+  };
+
+  p5.FFT.prototype.dispose = function () {
+    var index = p5sound.soundArray.indexOf(this);
+    p5sound.soundArray.splice(index, 1);
+
+    if (this.analyser) {
+      this.analyser.disconnect();
+      delete this.analyser;
+    }
+  };
+  /**
+   *  Returns an array of average amplitude values for a given number
+   *  of frequency bands split equally. N defaults to 16.
+   *  <em>NOTE: analyze() must be called prior to linAverages(). Analyze()
+   *  tells the FFT to analyze frequency data, and linAverages() uses
+   *  the results to group them into a smaller set of averages.</em></p>
+   *
+   *  @method  linAverages
+   *  @for p5.FFT
+   *  @param  {Number}  N                Number of returned frequency groups
+   *  @return {Array}   linearAverages   Array of average amplitude values for each group
+   */
+
+
+  p5.FFT.prototype.linAverages = function (N) {
+    var N = N || 16; 
+
+    var spectrum = this.freqDomain;
+    var spectrumLength = spectrum.length;
+    var spectrumStep = Math.floor(spectrumLength / N);
+    var linearAverages = new Array(N); 
+
+    var groupIndex = 0;
+
+    for (var specIndex = 0; specIndex < spectrumLength; specIndex++) {
+      linearAverages[groupIndex] = linearAverages[groupIndex] !== undefined ? (linearAverages[groupIndex] + spectrum[specIndex]) / 2 : spectrum[specIndex]; 
+
+      if (specIndex % spectrumStep === spectrumStep - 1) {
+        groupIndex++;
+      }
+    }
+
+    return linearAverages;
+  };
+  /**
+   *  Returns an array of average amplitude values of the spectrum, for a given
+   *  set of <a href="https://en.wikipedia.org/wiki/Octave_band" target="_blank">
+   *  Octave Bands</a>
+   *  <em>NOTE: analyze() must be called prior to logAverages(). Analyze()
+   *  tells the FFT to analyze frequency data, and logAverages() uses
+   *  the results to group them into a smaller set of averages.</em></p>
+   *
+   *  @method  logAverages
+   *  @for p5.FFT
+   *  @param  {Array}   octaveBands    Array of Octave Bands objects for grouping
+   *  @return {Array}   logAverages    Array of average amplitude values for each group
+   */
+
+
+  p5.FFT.prototype.logAverages = function (octaveBands) {
+    var nyquist = p5sound.audiocontext.sampleRate / 2;
+    var spectrum = this.freqDomain;
+    var spectrumLength = spectrum.length;
+    var logAverages = new Array(octaveBands.length); 
+
+    var octaveIndex = 0;
+
+    for (var specIndex = 0; specIndex < spectrumLength; specIndex++) {
+      var specIndexFrequency = Math.round(specIndex * nyquist / this.freqDomain.length); 
+
+      if (specIndexFrequency > octaveBands[octaveIndex].hi) {
+        octaveIndex++;
+      }
+
+      logAverages[octaveIndex] = logAverages[octaveIndex] !== undefined ? (logAverages[octaveIndex] + spectrum[specIndex]) / 2 : spectrum[specIndex];
+    }
+
+    return logAverages;
+  };
+  /**
+   *  Calculates and Returns the 1/N
+   *  <a href="https://en.wikipedia.org/wiki/Octave_band" target="_blank">Octave Bands</a>
+   *  N defaults to 3 and minimum central frequency to 15.625Hz.
+   *  (1/3 Octave Bands ~= 31 Frequency Bands)
+   *  Setting fCtr0 to a central value of a higher octave will ignore the lower bands
+   *  and produce less frequency groups.
+   *
+   *  @method   getOctaveBands
+   *  @for p5.FFT
+   *  @param  {Number}  N             Specifies the 1/N type of generated octave bands
+   *  @param  {Number}  fCtr0         Minimum central frequency for the lowest band
+   *  @return {Array}   octaveBands   Array of octave band objects with their bounds
+   */
+
+
+  p5.FFT.prototype.getOctaveBands = function (N, fCtr0) {
+    var N = N || 3; 
+
+    var fCtr0 = fCtr0 || 15.625; 
+
+    var octaveBands = [];
+    var lastFrequencyBand = {
+      lo: fCtr0 / Math.pow(2, 1 / (2 * N)),
+      ctr: fCtr0,
+      hi: fCtr0 * Math.pow(2, 1 / (2 * N))
+    };
+    octaveBands.push(lastFrequencyBand);
+    var nyquist = p5sound.audiocontext.sampleRate / 2;
+
+    while (lastFrequencyBand.hi < nyquist) {
+      var newFrequencyBand = {};
+      newFrequencyBand.lo = lastFrequencyBand.hi;
+      newFrequencyBand.ctr = lastFrequencyBand.ctr * Math.pow(2, 1 / N);
+      newFrequencyBand.hi = newFrequencyBand.ctr * Math.pow(2, 1 / (2 * N));
+      octaveBands.push(newFrequencyBand);
+      lastFrequencyBand = newFrequencyBand;
+    }
+
+    return octaveBands;
+  }; 
+
+
+  var freqToFloat = function freqToFloat(fft) {
+    if (fft.freqDomain instanceof Float32Array === false) {
+      fft.freqDomain = new Float32Array(fft.analyser.frequencyBinCount);
+    }
+  };
+
+  var freqToInt = function freqToInt(fft) {
+    if (fft.freqDomain instanceof Uint8Array === false) {
+      fft.freqDomain = new Uint8Array(fft.analyser.frequencyBinCount);
+    }
+  };
+
+  var timeToFloat = function timeToFloat(fft) {
+    if (fft.timeDomain instanceof Float32Array === false) {
+      fft.timeDomain = new Float32Array(fft.analyser.frequencyBinCount);
+    }
+  };
+
+  var timeToInt = function timeToInt(fft) {
+    if (fft.timeDomain instanceof Uint8Array === false) {
+      fft.timeDomain = new Uint8Array(fft.analyser.frequencyBinCount);
+    }
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var Signal = __webpack_require__(2);
+
+  var Add = __webpack_require__(7);
+
+  var Mult = __webpack_require__(3);
+
+  var Scale = __webpack_require__(13);
+  /**
+   *  <p>p5.Signal is a constant audio-rate signal used by p5.Oscillator
+   *  and p5.Envelope for modulation math.</p>
+   *
+   *  <p>This is necessary because Web Audio is processed on a seprate clock.
+   *  For example, the p5 draw loop runs about 60 times per second. But
+   *  the audio clock must process samples 44100 times per second. If we
+   *  want to add a value to each of those samples, we can't do it in the
+   *  draw loop, but we can do it by adding a constant-rate audio signal.</p.
+   *
+   *  <p>This class mostly functions behind the scenes in p5.sound, and returns
+   *  a Tone.Signal from the Tone.js library by Yotam Mann.
+   *  If you want to work directly with audio signals for modular
+   *  synthesis, check out
+   *  <a href='http://bit.ly/1oIoEng' target=_'blank'>tone.js.</a></p>
+   *
+   *  @class  p5.Signal
+   *  @constructor
+   *  @return {Tone.Signal} A Signal object from the Tone.js library
+   *  @example
+   *  <div><code>
+   *  let carrier, modulator;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(canvasPressed);
+   *    background(220);
+   *    text('tap to play', 20, 20);
+   *
+   *    carrier = new p5.Oscillator('sine');
+   *    carrier.start();
+   *    carrier.amp(1); // set amplitude
+   *    carrier.freq(220); // set frequency
+   *
+   *    modulator = new p5.Oscillator('sawtooth');
+   *    modulator.disconnect();
+   *    modulator.start();
+   *    modulator.amp(1);
+   *    modulator.freq(4);
+   *
+   *    // Modulator's default amplitude range is -1 to 1.
+   *    // Multiply it by -200, so the range is -200 to 200
+   *    // then add 220 so the range is 20 to 420
+   *    carrier.freq( modulator.mult(-400).add(220) );
+   *  }
+   *
+   *  function canvasPressed() {
+   *    userStartAudio();
+   *    carrier.amp(1.0);
+   *  }
+   *
+   *  function mouseReleased() {
+   *    carrier.amp(0);
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Signal = function (value) {
+    var s = new Signal(value); 
+
+    return s; 
+  };
+  /**
+   *  Fade to value, for smooth transitions
+   *
+   *  @method  fade
+   *  @for p5.Signal
+   *  @param  {Number} value          Value to set this signal
+   *  @param  {Number} [secondsFromNow] Length of fade, in seconds from now
+   */
+
+
+  Signal.prototype.fade = Signal.prototype.linearRampToValueAtTime;
+  Mult.prototype.fade = Signal.prototype.fade;
+  Add.prototype.fade = Signal.prototype.fade;
+  Scale.prototype.fade = Signal.prototype.fade;
+  /**
+   *  Connect a p5.sound object or Web Audio node to this
+   *  p5.Signal so that its amplitude values can be scaled.
+   *
+   *  @method setInput
+   *  @for p5.Signal
+   *  @param {Object} input
+   */
+
+  Signal.prototype.setInput = function (_input) {
+    _input.connect(this);
+  };
+
+  Mult.prototype.setInput = Signal.prototype.setInput;
+  Add.prototype.setInput = Signal.prototype.setInput;
+  Scale.prototype.setInput = Signal.prototype.setInput; 
+
+  /**
+   *  Add a constant value to this audio signal,
+   *  and return the resulting audio signal. Does
+   *  not change the value of the original signal,
+   *  instead it returns a new p5.SignalAdd.
+   *
+   *  @method  add
+   *  @for p5.Signal
+   *  @param {Number} number
+   *  @return {p5.Signal} object
+   */
+
+  Signal.prototype.add = function (num) {
+    var add = new Add(num); 
+
+    this.connect(add);
+    return add;
+  };
+
+  Mult.prototype.add = Signal.prototype.add;
+  Add.prototype.add = Signal.prototype.add;
+  Scale.prototype.add = Signal.prototype.add;
+  /**
+   *  Multiply this signal by a constant value,
+   *  and return the resulting audio signal. Does
+   *  not change the value of the original signal,
+   *  instead it returns a new p5.SignalMult.
+   *
+   *  @method  mult
+   *  @for p5.Signal
+   *  @param {Number} number to multiply
+   *  @return {p5.Signal} object
+   */
+
+  Signal.prototype.mult = function (num) {
+    var mult = new Mult(num); 
+
+    this.connect(mult);
+    return mult;
+  };
+
+  Mult.prototype.mult = Signal.prototype.mult;
+  Add.prototype.mult = Signal.prototype.mult;
+  Scale.prototype.mult = Signal.prototype.mult;
+  /**
+   *  Scale this signal value to a given range,
+   *  and return the result as an audio signal. Does
+   *  not change the value of the original signal,
+   *  instead it returns a new p5.SignalScale.
+   *
+   *  @method  scale
+   *  @for p5.Signal
+   *  @param {Number} number to multiply
+   *  @param  {Number} inMin  input range minumum
+   *  @param  {Number} inMax  input range maximum
+   *  @param  {Number} outMin input range minumum
+   *  @param  {Number} outMax input range maximum
+   *  @return {p5.Signal} object
+   */
+
+  Signal.prototype.scale = function (inMin, inMax, outMin, outMax) {
+    var mapOutMin, mapOutMax;
+
+    if (arguments.length === 4) {
+      mapOutMin = p5.prototype.map(outMin, inMin, inMax, 0, 1) - 0.5;
+      mapOutMax = p5.prototype.map(outMax, inMin, inMax, 0, 1) - 0.5;
+    } else {
+      mapOutMin = arguments[0];
+      mapOutMax = arguments[1];
+    }
+
+    var scale = new Scale(mapOutMin, mapOutMax);
+    this.connect(scale);
+    return scale;
+  };
+
+  Mult.prototype.scale = Signal.prototype.scale;
+  Add.prototype.scale = Signal.prototype.scale;
+  Scale.prototype.scale = Signal.prototype.scale;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(21)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(o){o.Frequency=function(e,t){if(!(this instanceof o.Frequency))return new o.Frequency(e,t);o.TimeBase.call(this,e,t)},o.extend(o.Frequency,o.TimeBase),o.Frequency.prototype._primaryExpressions=Object.create(o.TimeBase.prototype._primaryExpressions),o.Frequency.prototype._primaryExpressions.midi={regexp:/^(\d+(?:\.\d+)?midi)/,method:function(e){return this.midiToFrequency(e)}},o.Frequency.prototype._primaryExpressions.note={regexp:/^([a-g]{1}(?:b|#|x|bb)?)(-?[0-9]+)/i,method:function(e,t){var r=n[e.toLowerCase()]+12*(parseInt(t)+1);return this.midiToFrequency(r)}},o.Frequency.prototype._primaryExpressions.tr={regexp:/^(\d+(?:\.\d+)?):(\d+(?:\.\d+)?):?(\d+(?:\.\d+)?)?/,method:function(e,t,r){var n=1;return e&&"0"!==e&&(n*=this._beatsToUnits(this._timeSignature()*parseFloat(e))),t&&"0"!==t&&(n*=this._beatsToUnits(parseFloat(t))),r&&"0"!==r&&(n*=this._beatsToUnits(parseFloat(r)/4)),n}},o.Frequency.prototype.transpose=function(e){return this._expr=function(e,t){return e()*this.intervalToFrequencyRatio(t)}.bind(this,this._expr,e),this},o.Frequency.prototype.harmonize=function(e){return this._expr=function(e,t){for(var r=e(),n=[],o=0;o<t.length;o++)n[o]=r*this.intervalToFrequencyRatio(t[o]);return n}.bind(this,this._expr,e),this},o.Frequency.prototype.toMidi=function(){return this.frequencyToMidi(this.valueOf())},o.Frequency.prototype.toNote=function(){var e=this.valueOf(),t=Math.log(e/o.Frequency.A4)/Math.LN2,r=Math.round(12*t)+57,n=Math.floor(r/12);return n<0&&(r+=-12*n),i[r%12]+n.toString()},o.Frequency.prototype.toSeconds=function(){return 1/this.valueOf()},o.Frequency.prototype.toFrequency=function(){return this.valueOf()},o.Frequency.prototype.toTicks=function(){var e=this._beatsToUnits(1),t=this.valueOf()/e;return Math.floor(t*o.Transport.PPQ)},o.Frequency.prototype._frequencyToUnits=function(e){return e},o.Frequency.prototype._ticksToUnits=function(e){return 1/(60*e/(o.Transport.bpm.value*o.Transport.PPQ))},o.Frequency.prototype._beatsToUnits=function(e){return 1/o.TimeBase.prototype._beatsToUnits.call(this,e)},o.Frequency.prototype._secondsToUnits=function(e){return 1/e},o.Frequency.prototype._defaultUnits="hz";var n={cbb:-2,cb:-1,c:0,"c#":1,cx:2,dbb:0,db:1,d:2,"d#":3,dx:4,ebb:2,eb:3,e:4,"e#":5,ex:6,fbb:3,fb:4,f:5,"f#":6,fx:7,gbb:5,gb:6,g:7,"g#":8,gx:9,abb:7,ab:8,a:9,"a#":10,ax:11,bbb:9,bb:10,b:11,"b#":12,bx:13},i=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];return o.Frequency.A4=440,o.Frequency.prototype.midiToFrequency=function(e){return o.Frequency.A4*Math.pow(2,(e-69)/12)},o.Frequency.prototype.frequencyToMidi=function(e){return 69+12*Math.log(e/o.Frequency.A4)/Math.LN2},o.Frequency}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(20)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(o){return o.TransportTime=function(t,r){if(!(this instanceof o.TransportTime))return new o.TransportTime(t,r);o.Time.call(this,t,r)},o.extend(o.TransportTime,o.Time),o.TransportTime.prototype._unaryExpressions=Object.create(o.Time.prototype._unaryExpressions),o.TransportTime.prototype._unaryExpressions.quantize={regexp:/^@/,method:function(t){var r=this._secondsToTicks(t()),e=Math.ceil(o.Transport.ticks/r);return this._ticksToUnits(e*r)}},o.TransportTime.prototype._secondsToTicks=function(t){var r=t/this._beatsToUnits(1);return Math.round(r*o.Transport.PPQ)},o.TransportTime.prototype.valueOf=function(){return this._secondsToTicks(this._expr())+(this._plusNow?o.Transport.ticks:0)},o.TransportTime.prototype.toTicks=function(){return this.valueOf()},o.TransportTime.prototype.toSeconds=function(){return this._expr()+(this._plusNow?o.Transport.seconds:0)},o.TransportTime.prototype.toFrequency=function(){return 1/this.toSeconds()},o.TransportTime}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var p5sound = __webpack_require__(1);
+
+  var Add = __webpack_require__(7);
+
+  var Mult = __webpack_require__(3);
+
+  var Scale = __webpack_require__(13);
+
+  var TimelineSignal = __webpack_require__(14);
+  /**
+   *  <p>Envelopes are pre-defined amplitude distribution over time.
+   *  Typically, envelopes are used to control the output volume
+   *  of an object, a series of fades referred to as Attack, Decay,
+   *  Sustain and Release (
+   *  <a href="https://upload.wikimedia.org/wikipedia/commons/e/ea/ADSR_parameter.svg">ADSR</a>
+   *  ). Envelopes can also control other Web Audio Parameters—for example, a p5.Envelope can
+   *  control an Oscillator's frequency like this: <code>osc.freq(env)</code>.</p>
+   *  <p>Use <code><a href="#/p5.Envelope/setRange">setRange</a></code> to change the attack/release level.
+   *  Use <code><a href="#/p5.Envelope/setADSR">setADSR</a></code> to change attackTime, decayTime, sustainPercent and releaseTime.</p>
+   *  <p>Use the <code><a href="#/p5.Envelope/play">play</a></code> method to play the entire envelope,
+   *  the <code><a href="#/p5.Envelope/ramp">ramp</a></code> method for a pingable trigger,
+   *  or <code><a href="#/p5.Envelope/triggerAttack">triggerAttack</a></code>/
+   *  <code><a href="#/p5.Envelope/triggerRelease">triggerRelease</a></code> to trigger noteOn/noteOff.</p>
+   *
+   *  @class p5.Envelope
+   *  @constructor
+   *  @example
+   *  <div><code>
+   *  let t1 = 0.1; // attack time in seconds
+   *  let l1 = 0.7; // attack level 0.0 to 1.0
+   *  let t2 = 0.3; // decay time in seconds
+   *  let l2 = 0.1; // decay level  0.0 to 1.0
+   *
+   *  let env;
+   *  let triOsc;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    background(220);
+   *    text('tap to play', 20, 20);
+   *    cnv.mousePressed(playSound);
+   *
+   *    env = new p5.Envelope(t1, l1, t2, l2);
+   *    triOsc = new p5.Oscillator('triangle');
+   *  }
+   *
+   *  function playSound() {
+   *    // starting the oscillator ensures that audio is enabled.
+   *    triOsc.start();
+   *    env.play(triOsc);
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Envelope = function (t1, l1, t2, l2, t3, l3) {
+    /**
+     * Time until envelope reaches attackLevel
+     * @property attackTime
+     */
+    this.aTime = t1 || 0.1;
+    /**
+     * Level once attack is complete.
+     * @property attackLevel
+     */
+
+    this.aLevel = l1 || 1;
+    /**
+     * Time until envelope reaches decayLevel.
+     * @property decayTime
+     */
+
+    this.dTime = t2 || 0.5;
+    /**
+     * Level after decay. The envelope will sustain here until it is released.
+     * @property decayLevel
+     */
+
+    this.dLevel = l2 || 0;
+    /**
+     * Duration of the release portion of the envelope.
+     * @property releaseTime
+     */
+
+    this.rTime = t3 || 0;
+    /**
+     * Level at the end of the release.
+     * @property releaseLevel
+     */
+
+    this.rLevel = l3 || 0;
+    this._rampHighPercentage = 0.98;
+    this._rampLowPercentage = 0.02;
+    this.output = p5sound.audiocontext.createGain();
+    this.control = new TimelineSignal();
+
+    this._init(); 
+
+
+    this.control.connect(this.output); 
+
+    this.connection = null; 
+
+    this.mathOps = [this.control]; 
+
+    this.isExponential = false; 
+
+    this.sourceToClear = null; 
+
+    this.wasTriggered = false; 
+
+    p5sound.soundArray.push(this);
+  }; 
+
+
+  p5.Envelope.prototype._init = function () {
+    var now = p5sound.audiocontext.currentTime;
+    var t = now;
+    this.control.setTargetAtTime(0.00001, t, .001); 
+
+    this._setRampAD(this.aTime, this.dTime);
+  };
+  /**
+   *  Reset the envelope with a series of time/value pairs.
+   *
+   *  @method  set
+   *  @for p5.Envelope
+   *  @param {Number} attackTime     Time (in seconds) before level
+   *                                 reaches attackLevel
+   *  @param {Number} attackLevel    Typically an amplitude between
+   *                                 0.0 and 1.0
+   *  @param {Number} decayTime      Time
+   *  @param {Number} decayLevel   Amplitude (In a standard ADSR envelope,
+   *                                 decayLevel = sustainLevel)
+   *  @param {Number} releaseTime   Release Time (in seconds)
+   *  @param {Number} releaseLevel  Amplitude
+   *  @example
+   *  <div><code>
+   *  let attackTime;
+   *  let l1 = 0.7; // attack level 0.0 to 1.0
+   *  let t2 = 0.3; // decay time in seconds
+   *  let l2 = 0.1; // decay level  0.0 to 1.0
+   *  let l3 = 0.2; // release time in seconds
+   *
+   *  let env, triOsc;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(playSound);
+   *
+   *    env = new p5.Envelope();
+   *    triOsc = new p5.Oscillator('triangle');
+   *  }
+   *
+   *  function draw() {
+   *    background(220);
+   *    text('tap here to play', 5, 20);
+   *
+   *    attackTime = map(mouseX, 0, width, 0.0, 1.0);
+   *    text('attack time: ' + attackTime, 5, height - 20);
+   *  }
+   *
+   *  // mouseClick triggers envelope if over canvas
+   *  function playSound() {
+   *    env.set(attackTime, l1, t2, l2, l3);
+   *
+   *    triOsc.start();
+   *    env.play(triOsc);
+   *  }
+   *  </code></div>
+   *
+   */
+
+
+  p5.Envelope.prototype.set = function (t1, l1, t2, l2, t3, l3) {
+    this.aTime = t1;
+    this.aLevel = l1;
+    this.dTime = t2 || 0;
+    this.dLevel = l2 || 0;
+    this.rTime = t3 || 0;
+    this.rLevel = l3 || 0; 
+
+    this._setRampAD(t1, t2);
+  };
+  /**
+   *  Set values like a traditional
+   *  <a href="https://en.wikipedia.org/wiki/Synthesizer#/media/File:ADSR_parameter.svg">
+   *  ADSR envelope
+   *  </a>.
+   *
+   *  @method  setADSR
+   *  @for p5.Envelope
+   *  @param {Number} attackTime    Time (in seconds before envelope
+   *                                reaches Attack Level
+   *  @param {Number} [decayTime]    Time (in seconds) before envelope
+   *                                reaches Decay/Sustain Level
+   *  @param {Number} [susRatio]    Ratio between attackLevel and releaseLevel, on a scale from 0 to 1,
+   *                                where 1.0 = attackLevel, 0.0 = releaseLevel.
+   *                                The susRatio determines the decayLevel and the level at which the
+   *                                sustain portion of the envelope will sustain.
+   *                                For example, if attackLevel is 0.4, releaseLevel is 0,
+   *                                and susAmt is 0.5, the decayLevel would be 0.2. If attackLevel is
+   *                                increased to 1.0 (using <code>setRange</code>),
+   *                                then decayLevel would increase proportionally, to become 0.5.
+   *  @param {Number} [releaseTime]   Time in seconds from now (defaults to 0)
+   *  @example
+   *  <div><code>
+   *  let attackLevel = 1.0;
+   *  let releaseLevel = 0;
+   *
+   *  let attackTime = 0.001;
+   *  let decayTime = 0.2;
+   *  let susPercent = 0.2;
+   *  let releaseTime = 0.5;
+   *
+   *  let env, triOsc;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(playEnv);
+   *
+   *    env = new p5.Envelope();
+   *    triOsc = new p5.Oscillator('triangle');
+   *    triOsc.amp(env);
+   *    triOsc.freq(220);
+   *  }
+   *
+   *  function draw() {
+   *    background(220);
+   *    text('tap here to play', 5, 20);
+   *    attackTime = map(mouseX, 0, width, 0, 1.0);
+   *    text('attack time: ' + attackTime, 5, height - 40);
+   *  }
+   *
+   *  function playEnv() {
+   *    triOsc.start();
+   *    env.setADSR(attackTime, decayTime, susPercent, releaseTime);
+   *    env.play();
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Envelope.prototype.setADSR = function (aTime, dTime, sPercent, rTime) {
+    this.aTime = aTime;
+    this.dTime = dTime || 0; 
+
+    this.sPercent = sPercent || 0;
+    this.dLevel = typeof sPercent !== 'undefined' ? sPercent * (this.aLevel - this.rLevel) + this.rLevel : 0;
+    this.rTime = rTime || 0; 
+
+    this._setRampAD(aTime, dTime);
+  };
+  /**
+   *  Set max (attackLevel) and min (releaseLevel) of envelope.
+   *
+   *  @method  setRange
+   *  @for p5.Envelope
+   *  @param {Number} aLevel attack level (defaults to 1)
+   *  @param {Number} rLevel release level (defaults to 0)
+   *  @example
+   *  <div><code>
+   *  let attackLevel = 1.0;
+   *  let releaseLevel = 0;
+   *
+   *  let attackTime = 0.001;
+   *  let decayTime = 0.2;
+   *  let susPercent = 0.2;
+   *  let releaseTime = 0.5;
+   *
+   *  let env, triOsc;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(playEnv);
+   *
+   *    env = new p5.Envelope();
+   *    triOsc = new p5.Oscillator('triangle');
+   *    triOsc.amp(env);
+   *    triOsc.freq(220);
+   *  }
+   *
+   *  function draw() {
+   *    background(220);
+   *    text('tap here to play', 5, 20);
+   *    attackLevel = map(mouseY, height, 0, 0, 1.0);
+   *    text('attack level: ' + attackLevel, 5, height - 20);
+   *  }
+   *
+   *  function playEnv() {
+   *    triOsc.start();
+   *    env.setRange(attackLevel, releaseLevel);
+   *    env.play();
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Envelope.prototype.setRange = function (aLevel, rLevel) {
+    this.aLevel = aLevel || 1;
+    this.rLevel = rLevel || 0; 
+  }; 
+
+
+  p5.Envelope.prototype._setRampAD = function (t1, t2) {
+    this._rampAttackTime = this.checkExpInput(t1);
+    this._rampDecayTime = this.checkExpInput(t2);
+    var TCDenominator = 1.0; 
+
+    TCDenominator = Math.log(1.0 / this.checkExpInput(1.0 - this._rampHighPercentage));
+    this._rampAttackTC = t1 / this.checkExpInput(TCDenominator);
+    TCDenominator = Math.log(1.0 / this._rampLowPercentage);
+    this._rampDecayTC = t2 / this.checkExpInput(TCDenominator);
+  }; 
+
+
+  p5.Envelope.prototype.setRampPercentages = function (p1, p2) {
+    this._rampHighPercentage = this.checkExpInput(p1);
+    this._rampLowPercentage = this.checkExpInput(p2);
+    var TCDenominator = 1.0; 
+
+    TCDenominator = Math.log(1.0 / this.checkExpInput(1.0 - this._rampHighPercentage));
+    this._rampAttackTC = this._rampAttackTime / this.checkExpInput(TCDenominator);
+    TCDenominator = Math.log(1.0 / this._rampLowPercentage);
+    this._rampDecayTC = this._rampDecayTime / this.checkExpInput(TCDenominator);
+  };
+  /**
+   *  Assign a parameter to be controlled by this envelope.
+   *  If a p5.Sound object is given, then the p5.Envelope will control its
+   *  output gain. If multiple inputs are provided, the env will
+   *  control all of them.
+   *
+   *  @method  setInput
+   *  @for p5.Envelope
+   *  @param  {Object} [...inputs]         A p5.sound object or
+   *                                Web Audio Param.
+   */
+
+
+  p5.Envelope.prototype.setInput = function () {
+    for (var i = 0; i < arguments.length; i++) {
+      this.connect(arguments[i]);
+    }
+  };
+  /**
+   *  Set whether the envelope ramp is linear (default) or exponential.
+   *  Exponential ramps can be useful because we perceive amplitude
+   *  and frequency logarithmically.
+   *
+   *  @method  setExp
+   *  @for p5.Envelope
+   *  @param {Boolean} isExp true is exponential, false is linear
+   */
+
+
+  p5.Envelope.prototype.setExp = function (isExp) {
+    this.isExponential = isExp;
+  }; 
+
+
+  p5.Envelope.prototype.checkExpInput = function (value) {
+    if (value <= 0) {
+      value = 0.00000001;
+    }
+
+    return value;
+  };
+  /**
+   *  <p>Play tells the envelope to start acting on a given input.
+   *  If the input is a p5.sound object (i.e. AudioIn, Oscillator,
+   *  SoundFile), then Envelope will control its output volume.
+   *  Envelopes can also be used to control any <a href="
+   *  http://docs.webplatform.org/wiki/apis/webaudio/AudioParam">
+   *  Web Audio Audio Param.</a></p>
+   *
+   *  @method  play
+   *  @for p5.Envelope
+   *  @param  {Object} unit         A p5.sound object or
+   *                                Web Audio Param.
+   *  @param  {Number} [startTime]  time from now (in seconds) at which to play
+   *  @param  {Number} [sustainTime] time to sustain before releasing the envelope
+   *  @example
+   *  <div><code>
+   *  let attackLevel = 1.0;
+   *  let releaseLevel = 0;
+   *
+   *  let attackTime = 0.001;
+   *  let decayTime = 0.2;
+   *  let susPercent = 0.2;
+   *  let releaseTime = 0.5;
+   *
+   *  let env, triOsc;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(playEnv);
+   *
+   *    env = new p5.Envelope();
+   *    triOsc = new p5.Oscillator('triangle');
+   *    triOsc.amp(env);
+   *    triOsc.freq(220);
+   *    triOsc.start();
+   *  }
+   *
+   *  function draw() {
+   *    background(220);
+   *    text('tap here to play', 5, 20);
+   *    attackTime = map(mouseX, 0, width, 0, 1.0);
+   *    attackLevel = map(mouseY, height, 0, 0, 1.0);
+   *    text('attack time: ' + attackTime, 5, height - 40);
+   *    text('attack level: ' + attackLevel, 5, height - 20);
+   *  }
+   *
+   *  function playEnv() {
+   *    // ensure that audio is enabled
+   *    userStartAudio();
+   *
+   *    env.setADSR(attackTime, decayTime, susPercent, releaseTime);
+   *    env.setRange(attackLevel, releaseLevel);
+   *    env.play();
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Envelope.prototype.play = function (unit, secondsFromNow, susTime) {
+    var tFromNow = secondsFromNow || 0;
+    var susTime = susTime || 0;
+
+    if (unit) {
+      if (this.connection !== unit) {
+        this.connect(unit);
+      }
+    }
+
+    this.triggerAttack(unit, tFromNow);
+    this.triggerRelease(unit, tFromNow + this.aTime + this.dTime + susTime);
+  };
+  /**
+   *  Trigger the Attack, and Decay portion of the Envelope.
+   *  Similar to holding down a key on a piano, but it will
+   *  hold the sustain level until you let go. Input can be
+   *  any p5.sound object, or a <a href="
+   *  http://docs.webplatform.org/wiki/apis/webaudio/AudioParam">
+   *  Web Audio Param</a>.
+   *
+   *  @method  triggerAttack
+   *  @for p5.Envelope
+   *  @param  {Object} unit p5.sound Object or Web Audio Param
+   *  @param  {Number} secondsFromNow time from now (in seconds)
+   *  @example
+   *  <div><code>
+   *  let attackTime = 0.001;
+   *  let decayTime = 0.2;
+   *  let susPercent = 0.3;
+   *  let releaseTime = 0.4;
+   *  let env, triOsc;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    background(220);
+   *    textAlign(CENTER);
+   *    textSize(10);
+   *    text('tap to triggerAttack', width/2, height/2);
+   *
+   *    env = new p5.Envelope();
+   *    env.setADSR(attackTime, decayTime, susPercent, releaseTime);
+   *    env.setRange(1.0, 0.0);
+   *    triOsc = new p5.Oscillator('triangle');
+   *    triOsc.freq(220);
+   *
+   *    cnv.mousePressed(envAttack);
+   *  }
+   *
+   *  function envAttack()  {
+   *    background(0, 255, 255);
+   *    text('release to release', width/2, height/2);
+   *
+   *    // ensures audio is enabled. See also: `userStartAudio`
+   *    triOsc.start();
+   *
+   *    env.triggerAttack(triOsc);
+   *  }
+   *
+   *  function mouseReleased() {
+   *    background(220);
+   *    text('tap to triggerAttack', width/2, height/2);
+   *
+   *    env.triggerRelease(triOsc);
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Envelope.prototype.triggerAttack = function (unit, secondsFromNow) {
+    var now = p5sound.audiocontext.currentTime;
+    var tFromNow = secondsFromNow || 0;
+    var t = now + tFromNow;
+    this.lastAttack = t;
+    this.wasTriggered = true;
+
+    if (unit) {
+      if (this.connection !== unit) {
+        this.connect(unit);
+      }
+    } 
+
+
+    var valToSet = this.control.getValueAtTime(t);
+
+    if (this.isExponential === true) {
+      this.control.exponentialRampToValueAtTime(this.checkExpInput(valToSet), t);
+    } else {
+      this.control.linearRampToValueAtTime(valToSet, t);
+    } 
+
+
+    t += this.aTime;
+
+    if (this.isExponential === true) {
+      this.control.exponentialRampToValueAtTime(this.checkExpInput(this.aLevel), t);
+      valToSet = this.checkExpInput(this.control.getValueAtTime(t));
+      this.control.cancelScheduledValues(t);
+      this.control.exponentialRampToValueAtTime(valToSet, t);
+    } else {
+      this.control.linearRampToValueAtTime(this.aLevel, t);
+      valToSet = this.control.getValueAtTime(t);
+      this.control.cancelScheduledValues(t);
+      this.control.linearRampToValueAtTime(valToSet, t);
+    } 
+
+
+    t += this.dTime;
+
+    if (this.isExponential === true) {
+      this.control.exponentialRampToValueAtTime(this.checkExpInput(this.dLevel), t);
+      valToSet = this.checkExpInput(this.control.getValueAtTime(t));
+      this.control.cancelScheduledValues(t);
+      this.control.exponentialRampToValueAtTime(valToSet, t);
+    } else {
+      this.control.linearRampToValueAtTime(this.dLevel, t);
+      valToSet = this.control.getValueAtTime(t);
+      this.control.cancelScheduledValues(t);
+      this.control.linearRampToValueAtTime(valToSet, t);
+    }
+  };
+  /**
+   *  Trigger the Release of the Envelope. This is similar to releasing
+   *  the key on a piano and letting the sound fade according to the
+   *  release level and release time.
+   *
+   *  @method  triggerRelease
+   *  @for p5.Envelope
+   *  @param  {Object} unit p5.sound Object or Web Audio Param
+   *  @param  {Number} secondsFromNow time to trigger the release
+   *  @example
+   *  <div><code>
+   *  let attackTime = 0.001;
+   *  let decayTime = 0.2;
+   *  let susPercent = 0.3;
+   *  let releaseTime = 0.4;
+   *  let env, triOsc;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    background(220);
+   *    textAlign(CENTER);
+   *    textSize(10);
+   *    text('tap to triggerAttack', width/2, height/2);
+   *
+   *    env = new p5.Envelope();
+   *    env.setADSR(attackTime, decayTime, susPercent, releaseTime);
+   *    env.setRange(1.0, 0.0);
+   *    triOsc = new p5.Oscillator('triangle');
+   *    triOsc.freq(220);
+   *
+   *    cnv.mousePressed(envAttack);
+   *  }
+   *
+   *  function envAttack()  {
+   *    background(0, 255, 255);
+   *    text('release to release', width/2, height/2);
+   *
+   *    // ensures audio is enabled. See also: `userStartAudio`
+   *    triOsc.start();
+   *
+   *    env.triggerAttack(triOsc);
+   *  }
+   *
+   *  function mouseReleased() {
+   *    background(220);
+   *    text('tap to triggerAttack', width/2, height/2);
+   *
+   *    env.triggerRelease(triOsc);
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Envelope.prototype.triggerRelease = function (unit, secondsFromNow) {
+    if (!this.wasTriggered) {
+      return;
+    }
+
+    var now = p5sound.audiocontext.currentTime;
+    var tFromNow = secondsFromNow || 0;
+    var t = now + tFromNow;
+
+    if (unit) {
+      if (this.connection !== unit) {
+        this.connect(unit);
+      }
+    } 
+
+
+    var valToSet = this.control.getValueAtTime(t);
+
+    if (this.isExponential === true) {
+      this.control.exponentialRampToValueAtTime(this.checkExpInput(valToSet), t);
+    } else {
+      this.control.linearRampToValueAtTime(valToSet, t);
+    } 
+
+
+    t += this.rTime;
+
+    if (this.isExponential === true) {
+      this.control.exponentialRampToValueAtTime(this.checkExpInput(this.rLevel), t);
+      valToSet = this.checkExpInput(this.control.getValueAtTime(t));
+      this.control.cancelScheduledValues(t);
+      this.control.exponentialRampToValueAtTime(valToSet, t);
+    } else {
+      this.control.linearRampToValueAtTime(this.rLevel, t);
+      valToSet = this.control.getValueAtTime(t);
+      this.control.cancelScheduledValues(t);
+      this.control.linearRampToValueAtTime(valToSet, t);
+    }
+
+    this.wasTriggered = false;
+  };
+  /**
+   *  Exponentially ramp to a value using the first two
+   *  values from <code><a href="#/p5.Envelope/setADSR">setADSR(attackTime, decayTime)</a></code>
+   *  as <a href="https://en.wikipedia.org/wiki/RC_time_constant">
+   *  time constants</a> for simple exponential ramps.
+   *  If the value is higher than current value, it uses attackTime,
+   *  while a decrease uses decayTime.
+   *
+   *  @method  ramp
+   *  @for p5.Envelope
+   *  @param  {Object} unit           p5.sound Object or Web Audio Param
+   *  @param  {Number} secondsFromNow When to trigger the ramp
+   *  @param  {Number} v              Target value
+   *  @param  {Number} [v2]           Second target value (optional)
+   *  @example
+   *  <div><code>
+   *  let env, osc, amp;
+   *
+   *  let attackTime = 0.001;
+   *  let decayTime = 0.2;
+   *  let attackLevel = 1;
+   *  let decayLevel = 0;
+   *
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    fill(0,255,0);
+   *    noStroke();
+   *
+   *    env = new p5.Envelope();
+   *    env.setADSR(attackTime, decayTime);
+   *    osc = new p5.Oscillator();
+   *    osc.amp(env);
+   *    amp = new p5.Amplitude();
+   *
+   *    cnv.mousePressed(triggerRamp);
+   *  }
+   *
+   *  function triggerRamp() {
+   *    // ensures audio is enabled. See also: `userStartAudio`
+   *    osc.start();
+   *
+   *    env.ramp(osc, 0, attackLevel, decayLevel);
+   *  }
+   *
+   *  function draw() {
+   *    background(20);
+   *    text('tap to play', 10, 20);
+   *    let h = map(amp.getLevel(), 0, 0.4, 0, height);;
+   *    rect(0, height, width, -h);
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Envelope.prototype.ramp = function (unit, secondsFromNow, v1, v2) {
+    var now = p5sound.audiocontext.currentTime;
+    var tFromNow = secondsFromNow || 0;
+    var t = now + tFromNow;
+    var destination1 = this.checkExpInput(v1);
+    var destination2 = typeof v2 !== 'undefined' ? this.checkExpInput(v2) : undefined; 
+
+    if (unit) {
+      if (this.connection !== unit) {
+        this.connect(unit);
+      }
+    } 
+
+
+    var currentVal = this.checkExpInput(this.control.getValueAtTime(t)); 
+
+    if (destination1 > currentVal) {
+      this.control.setTargetAtTime(destination1, t, this._rampAttackTC);
+      t += this._rampAttackTime;
+    } 
+    else if (destination1 < currentVal) {
+        this.control.setTargetAtTime(destination1, t, this._rampDecayTC);
+        t += this._rampDecayTime;
+      } 
+
+
+    if (destination2 === undefined) return; 
+
+    if (destination2 > destination1) {
+      this.control.setTargetAtTime(destination2, t, this._rampAttackTC);
+    } 
+    else if (destination2 < destination1) {
+        this.control.setTargetAtTime(destination2, t, this._rampDecayTC);
+      }
+  };
+
+  p5.Envelope.prototype.connect = function (unit) {
+    this.connection = unit; 
+
+    if (unit instanceof p5.Oscillator || unit instanceof p5.SoundFile || unit instanceof p5.AudioIn || unit instanceof p5.Reverb || unit instanceof p5.Noise || unit instanceof p5.Filter || unit instanceof p5.Delay) {
+      unit = unit.output.gain;
+    }
+
+    if (unit instanceof AudioParam) {
+      unit.setValueAtTime(0, p5sound.audiocontext.currentTime);
+    }
+
+    if (unit instanceof p5.Signal) {
+      unit.setValue(0);
+    }
+
+    this.output.connect(unit);
+  };
+
+  p5.Envelope.prototype.disconnect = function () {
+    if (this.output) {
+      this.output.disconnect();
+    }
+  }; 
+
+  /**
+   *  Add a value to the p5.Oscillator's output amplitude,
+   *  and return the oscillator. Calling this method
+   *  again will override the initial add() with new values.
+   *
+   *  @method  add
+   *  @for p5.Envelope
+   *  @param {Number} number Constant number to add
+   *  @return {p5.Envelope} Envelope Returns this envelope
+   *                                     with scaled output
+   */
+
+
+  p5.Envelope.prototype.add = function (num) {
+    var add = new Add(num);
+    var thisChain = this.mathOps.length;
+    var nextChain = this.output;
+    return p5.prototype._mathChain(this, add, thisChain, nextChain, Add);
+  };
+  /**
+   *  Multiply the p5.Envelope's output amplitude
+   *  by a fixed value. Calling this method
+   *  again will override the initial mult() with new values.
+   *
+   *  @method  mult
+   *  @for p5.Envelope
+   *  @param {Number} number Constant number to multiply
+   *  @return {p5.Envelope} Envelope Returns this envelope
+   *                                     with scaled output
+   */
+
+
+  p5.Envelope.prototype.mult = function (num) {
+    var mult = new Mult(num);
+    var thisChain = this.mathOps.length;
+    var nextChain = this.output;
+    return p5.prototype._mathChain(this, mult, thisChain, nextChain, Mult);
+  };
+  /**
+   *  Scale this envelope's amplitude values to a given
+   *  range, and return the envelope. Calling this method
+   *  again will override the initial scale() with new values.
+   *
+   *  @method  scale
+   *  @for p5.Envelope
+   *  @param  {Number} inMin  input range minumum
+   *  @param  {Number} inMax  input range maximum
+   *  @param  {Number} outMin input range minumum
+   *  @param  {Number} outMax input range maximum
+   *  @return {p5.Envelope} Envelope Returns this envelope
+   *                                     with scaled output
+   */
+
+
+  p5.Envelope.prototype.scale = function (inMin, inMax, outMin, outMax) {
+    var scale = new Scale(inMin, inMax, outMin, outMax);
+    var thisChain = this.mathOps.length;
+    var nextChain = this.output;
+    return p5.prototype._mathChain(this, scale, thisChain, nextChain, Scale);
+  }; 
+
+
+  p5.Envelope.prototype.dispose = function () {
+    var index = p5sound.soundArray.indexOf(this);
+    p5sound.soundArray.splice(index, 1);
+    this.disconnect();
+
+    if (this.control) {
+      this.control.dispose();
+      this.control = null;
+    }
+
+    for (var i = 1; i < this.mathOps.length; i++) {
+      this.mathOps[i].dispose();
+    }
+  }; 
+
+
+  p5.Env = function (t1, l1, t2, l2, t3, l3) {
+    console.warn('WARNING: p5.Env is now deprecated and may be removed in future versions. ' + 'Please use the new p5.Envelope instead.');
+    p5.Envelope.call(this, t1, l1, t2, l2, t3, l3);
+  };
+
+  p5.Env.prototype = Object.create(p5.Envelope.prototype);
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var p5sound = __webpack_require__(1);
+
+  __webpack_require__(23);
+  /**
+   *  Creates a Pulse object, an oscillator that implements
+   *  Pulse Width Modulation.
+   *  The pulse is created with two oscillators.
+   *  Accepts a parameter for frequency, and to set the
+   *  width between the pulses. See <a href="
+   *  http://p5js.org/reference/#/p5.Oscillator">
+   *  <code>p5.Oscillator</code> for a full list of methods.
+   *
+   *  @class p5.Pulse
+   *  @extends p5.Oscillator
+   *  @constructor
+   *  @param {Number} [freq] Frequency in oscillations per second (Hz)
+   *  @param {Number} [w]    Width between the pulses (0 to 1.0,
+   *                         defaults to 0)
+   *  @example
+   *  <div><code>
+   *  let pulse;
+   *  function setup() {
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(startPulse);
+   *    background(220);
+   *
+   *    pulse = new p5.Pulse();
+   *    pulse.amp(0.5);
+   *    pulse.freq(220);
+   *  }
+   *  function startPulse() {
+   *    pulse.start();
+   *    pulse.amp(0.5, 0.02);
+   *  }
+   *  function mouseReleased() {
+   *    pulse.amp(0, 0.2);
+   *  }
+   *  function draw() {
+   *    background(220);
+   *    text('tap to play', 5, 20, width - 20);
+   *    let w = map(mouseX, 0, width, 0, 1);
+   *    w = constrain(w, 0, 1);
+   *    pulse.width(w);
+   *    text('pulse width: ' + w, 5, height - 20);
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.Pulse = function (freq, w) {
+    p5.Oscillator.call(this, freq, 'sawtooth'); 
+
+    this.w = w || 0; 
+
+    this.osc2 = new p5.SawOsc(freq); 
+
+    this.dNode = p5sound.audiocontext.createDelay(); 
+
+    this.dcOffset = createDCOffset();
+    this.dcGain = p5sound.audiocontext.createGain();
+    this.dcOffset.connect(this.dcGain);
+    this.dcGain.connect(this.output); 
+
+    this.f = freq || 440;
+    var mW = this.w / this.oscillator.frequency.value;
+    this.dNode.delayTime.value = mW;
+    this.dcGain.gain.value = 1.7 * (0.5 - this.w); 
+
+    this.osc2.disconnect();
+    this.osc2.panner.disconnect();
+    this.osc2.amp(-1); 
+
+    this.osc2.output.connect(this.dNode);
+    this.dNode.connect(this.output);
+    this.output.gain.value = 1;
+    this.output.connect(this.panner);
+  };
+
+  p5.Pulse.prototype = Object.create(p5.Oscillator.prototype);
+  /**
+   *  Set the width of a Pulse object (an oscillator that implements
+   *  Pulse Width Modulation).
+   *
+   *  @method  width
+   *  @param {Number} [width]    Width between the pulses (0 to 1.0,
+   *                         defaults to 0)
+   */
+
+  p5.Pulse.prototype.width = function (w) {
+    if (typeof w === 'number') {
+      if (w <= 1.0 && w >= 0.0) {
+        this.w = w; 
+
+        var mW = this.w / this.oscillator.frequency.value;
+        this.dNode.delayTime.value = mW;
+      }
+
+      this.dcGain.gain.value = 1.7 * (0.5 - this.w);
+    } else {
+      w.connect(this.dNode.delayTime);
+      var sig = new p5.SignalAdd(-0.5);
+      sig.setInput(w);
+      sig = sig.mult(-1);
+      sig = sig.mult(1.7);
+      sig.connect(this.dcGain.gain);
+    }
+  };
+
+  p5.Pulse.prototype.start = function (f, time) {
+    var now = p5sound.audiocontext.currentTime;
+    var t = time || 0;
+
+    if (!this.started) {
+      var freq = f || this.f;
+      var type = this.oscillator.type;
+      this.oscillator = p5sound.audiocontext.createOscillator();
+      this.oscillator.frequency.setValueAtTime(freq, now);
+      this.oscillator.type = type;
+      this.oscillator.connect(this.output);
+      this.oscillator.start(t + now); 
+
+      this.osc2.oscillator = p5sound.audiocontext.createOscillator();
+      this.osc2.oscillator.frequency.setValueAtTime(freq, t + now);
+      this.osc2.oscillator.type = type;
+      this.osc2.oscillator.connect(this.osc2.output);
+      this.osc2.start(t + now);
+      this.freqNode = [this.oscillator.frequency, this.osc2.oscillator.frequency]; 
+
+      this.dcOffset = createDCOffset();
+      this.dcOffset.connect(this.dcGain);
+      this.dcOffset.start(t + now); 
+
+      if (this.mods !== undefined && this.mods.frequency !== undefined) {
+        this.mods.frequency.connect(this.freqNode[0]);
+        this.mods.frequency.connect(this.freqNode[1]);
+      }
+
+      this.started = true;
+      this.osc2.started = true;
+    }
+  };
+
+  p5.Pulse.prototype.stop = function (time) {
+    if (this.started) {
+      var t = time || 0;
+      var now = p5sound.audiocontext.currentTime;
+      this.oscillator.stop(t + now);
+
+      if (this.osc2.oscillator) {
+        this.osc2.oscillator.stop(t + now);
+      }
+
+      this.dcOffset.stop(t + now);
+      this.started = false;
+      this.osc2.started = false;
+    }
+  };
+
+  p5.Pulse.prototype.freq = function (val, rampTime, tFromNow) {
+    if (typeof val === 'number') {
+      this.f = val;
+      var now = p5sound.audiocontext.currentTime;
+      var rampTime = rampTime || 0;
+      var tFromNow = tFromNow || 0;
+      var currentFreq = this.oscillator.frequency.value;
+      this.oscillator.frequency.cancelScheduledValues(now);
+      this.oscillator.frequency.setValueAtTime(currentFreq, now + tFromNow);
+      this.oscillator.frequency.exponentialRampToValueAtTime(val, tFromNow + rampTime + now);
+      this.osc2.oscillator.frequency.cancelScheduledValues(now);
+      this.osc2.oscillator.frequency.setValueAtTime(currentFreq, now + tFromNow);
+      this.osc2.oscillator.frequency.exponentialRampToValueAtTime(val, tFromNow + rampTime + now);
+
+      if (this.freqMod) {
+        this.freqMod.output.disconnect();
+        this.freqMod = null;
+      }
+    } else if (val.output) {
+      val.output.disconnect();
+      val.output.connect(this.oscillator.frequency);
+      val.output.connect(this.osc2.oscillator.frequency);
+      this.freqMod = val;
+    }
+  }; 
+
+
+  function createDCOffset() {
+    var ac = p5sound.audiocontext;
+    var buffer = ac.createBuffer(1, 2048, ac.sampleRate);
+    var data = buffer.getChannelData(0);
+
+    for (var i = 0; i < 2048; i++) {
+      data[i] = 1.0;
+    }
+
+    var bufferSource = ac.createBufferSource();
+    bufferSource.buffer = buffer;
+    bufferSource.loop = true;
+    return bufferSource;
+  }
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var p5sound = __webpack_require__(1);
+  /**
+   *  Noise is a type of oscillator that generates a buffer with random values.
+   *
+   *  @class p5.Noise
+   *  @extends p5.Oscillator
+   *  @constructor
+   *  @param {String} type Type of noise can be 'white' (default),
+   *                       'brown' or 'pink'.
+   */
+
+
+  p5.Noise = function (type) {
+    var assignType;
+    p5.Oscillator.call(this);
+    delete this.f;
+    delete this.freq;
+    delete this.oscillator;
+
+    if (type === 'brown') {
+      assignType = _brownNoise;
+    } else if (type === 'pink') {
+      assignType = _pinkNoise;
+    } else {
+      assignType = _whiteNoise;
+    }
+
+    this.buffer = assignType;
+  };
+
+  p5.Noise.prototype = Object.create(p5.Oscillator.prototype); 
+
+  var _whiteNoise = function () {
+    var bufferSize = 2 * p5sound.audiocontext.sampleRate;
+    var whiteBuffer = p5sound.audiocontext.createBuffer(1, bufferSize, p5sound.audiocontext.sampleRate);
+    var noiseData = whiteBuffer.getChannelData(0);
+
+    for (var i = 0; i < bufferSize; i++) {
+      noiseData[i] = Math.random() * 2 - 1;
+    }
+
+    whiteBuffer.type = 'white';
+    return whiteBuffer;
+  }();
+
+  var _pinkNoise = function () {
+    var bufferSize = 2 * p5sound.audiocontext.sampleRate;
+    var pinkBuffer = p5sound.audiocontext.createBuffer(1, bufferSize, p5sound.audiocontext.sampleRate);
+    var noiseData = pinkBuffer.getChannelData(0);
+    var b0, b1, b2, b3, b4, b5, b6;
+    b0 = b1 = b2 = b3 = b4 = b5 = b6 = 0.0;
+
+    for (var i = 0; i < bufferSize; i++) {
+      var white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      noiseData[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+      noiseData[i] *= 0.11; 
+
+      b6 = white * 0.115926;
+    }
+
+    pinkBuffer.type = 'pink';
+    return pinkBuffer;
+  }();
+
+  var _brownNoise = function () {
+    var bufferSize = 2 * p5sound.audiocontext.sampleRate;
+    var brownBuffer = p5sound.audiocontext.createBuffer(1, bufferSize, p5sound.audiocontext.sampleRate);
+    var noiseData = brownBuffer.getChannelData(0);
+    var lastOut = 0.0;
+
+    for (var i = 0; i < bufferSize; i++) {
+      var white = Math.random() * 2 - 1;
+      noiseData[i] = (lastOut + 0.02 * white) / 1.02;
+      lastOut = noiseData[i];
+      noiseData[i] *= 3.5;
+    }
+
+    brownBuffer.type = 'brown';
+    return brownBuffer;
+  }();
+  /**
+   *  Set type of noise to 'white', 'pink' or 'brown'.
+   *  White is the default.
+   *
+   *  @method setType
+   *  @param {String} [type] 'white', 'pink' or 'brown'
+   */
+
+
+  p5.Noise.prototype.setType = function (type) {
+    switch (type) {
+      case 'white':
+        this.buffer = _whiteNoise;
+        break;
+
+      case 'pink':
+        this.buffer = _pinkNoise;
+        break;
+
+      case 'brown':
+        this.buffer = _brownNoise;
+        break;
+
+      default:
+        this.buffer = _whiteNoise;
+    }
+
+    if (this.started) {
+      var now = p5sound.audiocontext.currentTime;
+      this.stop(now);
+      this.start(now + .01);
+    }
+  };
+
+  p5.Noise.prototype.getType = function () {
+    return this.buffer.type;
+  };
+
+  p5.Noise.prototype.start = function () {
+    if (this.started) {
+      this.stop();
+    }
+
+    this.noise = p5sound.audiocontext.createBufferSource();
+    this.noise.buffer = this.buffer;
+    this.noise.loop = true;
+    this.noise.connect(this.output);
+    var now = p5sound.audiocontext.currentTime;
+    this.noise.start(now);
+    this.started = true;
+  };
+
+  p5.Noise.prototype.stop = function () {
+    var now = p5sound.audiocontext.currentTime;
+
+    if (this.noise) {
+      this.noise.stop(now);
+      this.started = false;
+    }
+  };
+
+  p5.Noise.prototype.dispose = function () {
+    var now = p5sound.audiocontext.currentTime; 
+
+    var index = p5sound.soundArray.indexOf(this);
+    p5sound.soundArray.splice(index, 1);
+
+    if (this.noise) {
+      this.noise.disconnect();
+      this.stop(now);
+    }
+
+    if (this.output) {
+      this.output.disconnect();
+    }
+
+    if (this.panner) {
+      this.panner.disconnect();
+    }
+
+    this.output = null;
+    this.panner = null;
+    this.buffer = null;
+    this.noise = null;
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var p5sound = __webpack_require__(1); 
+
+
+  p5sound.inputSources = [];
+  /**
+   *  <p>Get audio from an input, i.e. your computer's microphone.</p>
+   *
+   *  <p>Turn the mic on/off with the start() and stop() methods. When the mic
+   *  is on, its volume can be measured with getLevel or by connecting an
+   *  FFT object.</p>
+   *
+   *  <p>If you want to hear the AudioIn, use the .connect() method.
+   *  AudioIn does not connect to p5.sound output by default to prevent
+   *  feedback.</p>
+   *
+   *  <p><em>Note: This uses the <a href="http://caniuse.com/stream">getUserMedia/
+   *  Stream</a> API, which is not supported by certain browsers. Access in Chrome browser
+   *  is limited to localhost and https, but access over http may be limited.</em></p>
+   *
+   *  @class p5.AudioIn
+   *  @constructor
+   *  @param {Function} [errorCallback] A function to call if there is an error
+   *                                    accessing the AudioIn. For example,
+   *                                    Safari and iOS devices do not
+   *                                    currently allow microphone access.
+   *  @example
+   *  <div><code>
+   *  let mic;
+   *
+   *   function setup(){
+   *    let cnv = createCanvas(100, 100);
+   *    cnv.mousePressed(userStartAudio);
+   *    textAlign(CENTER);
+   *    mic = new p5.AudioIn();
+   *    mic.start();
+   *  }
+   *
+   *  function draw(){
+   *    background(0);
+   *    fill(255);
+   *    text('tap to start', width/2, 20);
+   *
+   *    micLevel = mic.getLevel();
+   *    let y = height - micLevel * height;
+   *    ellipse(width/2, y, 10, 10);
+   *  }
+   *  </code></div>
+   */
+
+  p5.AudioIn = function (errorCallback) {
+
+    /**
+     * @property {GainNode} input
+     */
+    this.input = p5sound.audiocontext.createGain();
+    /**
+     * @property {GainNode} output
+     */
+
+    this.output = p5sound.audiocontext.createGain();
+    /**
+     * @property {MediaStream|null} stream
+     */
+
+    this.stream = null;
+    /**
+     * @property {MediaStreamAudioSourceNode|null} mediaStream
+     */
+
+    this.mediaStream = null;
+    /**
+     * @property {Number|null} currentSource
+     */
+
+    this.currentSource = null;
+    /**
+     *  Client must allow browser to access their microphone / audioin source.
+     *  Default: false. Will become true when the client enables access.
+     *
+     *  @property {Boolean} enabled
+     */
+
+    this.enabled = false;
+    /**
+     * Input amplitude, connect to it by default but not to master out
+     *
+     *  @property {p5.Amplitude} amplitude
+     */
+
+    this.amplitude = new p5.Amplitude();
+    this.output.connect(this.amplitude.input);
+
+    if (!window.MediaStreamTrack || !window.navigator.mediaDevices || !window.navigator.mediaDevices.getUserMedia) {
+      errorCallback ? errorCallback() : window.alert('This browser does not support MediaStreamTrack and mediaDevices');
+    } 
+
+
+    p5sound.soundArray.push(this);
+  };
+  /**
+   *  Start processing audio input. This enables the use of other
+   *  AudioIn methods like getLevel(). Note that by default, AudioIn
+   *  is not connected to p5.sound's output. So you won't hear
+   *  anything unless you use the connect() method.<br/>
+   *
+   *  Certain browsers limit access to the user's microphone. For example,
+   *  Chrome only allows access from localhost and over https. For this reason,
+   *  you may want to include an errorCallback—a function that is called in case
+   *  the browser won't provide mic access.
+   *
+   *  @method start
+   *  @for p5.AudioIn
+   *  @param {Function} [successCallback] Name of a function to call on
+   *                                    success.
+   *  @param {Function} [errorCallback] Name of a function to call if
+   *                                    there was an error. For example,
+   *                                    some browsers do not support
+   *                                    getUserMedia.
+   */
+
+
+  p5.AudioIn.prototype.start = function (successCallback, errorCallback) {
+    var self = this;
+
+    if (this.stream) {
+      this.stop();
+    } 
+
+
+    var audioSource = p5sound.inputSources[self.currentSource];
+    var constraints = {
+      audio: {
+        sampleRate: p5sound.audiocontext.sampleRate,
+        echoCancellation: false
+      }
+    }; 
+
+    if (p5sound.inputSources[this.currentSource]) {
+      constraints.audio.deviceId = audioSource.deviceId;
+    }
+
+    window.navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+      self.stream = stream;
+      self.enabled = true; 
+
+      self.mediaStream = p5sound.audiocontext.createMediaStreamSource(stream);
+      self.mediaStream.connect(self.output); 
+
+      self.amplitude.setInput(self.output);
+      if (successCallback) successCallback();
+    })["catch"](function (err) {
+      if (errorCallback) errorCallback(err);else console.error(err);
+    });
+  };
+  /**
+   *  Turn the AudioIn off. If the AudioIn is stopped, it cannot getLevel().
+   *  If re-starting, the user may be prompted for permission access.
+   *
+   *  @method stop
+   *  @for p5.AudioIn
+   */
+
+
+  p5.AudioIn.prototype.stop = function () {
+    if (this.stream) {
+      this.stream.getTracks().forEach(function (track) {
+        track.stop();
+      });
+      this.mediaStream.disconnect();
+      delete this.mediaStream;
+      delete this.stream;
+    }
+  };
+  /**
+   *  Connect to an audio unit. If no parameter is provided, will
+   *  connect to the master output (i.e. your speakers).<br/>
+   *
+   *  @method  connect
+   *  @for p5.AudioIn
+   *  @param  {Object} [unit] An object that accepts audio input,
+   *                          such as an FFT
+   */
+
+
+  p5.AudioIn.prototype.connect = function (unit) {
+    if (unit) {
+      if (unit.hasOwnProperty('input')) {
+        this.output.connect(unit.input);
+      } else if (unit.hasOwnProperty('analyser')) {
+        this.output.connect(unit.analyser);
+      } else {
+        this.output.connect(unit);
+      }
+    } else {
+      this.output.connect(p5sound.input);
+    }
+  };
+  /**
+   *  Disconnect the AudioIn from all audio units. For example, if
+   *  connect() had been called, disconnect() will stop sending
+   *  signal to your speakers.<br/>
+   *
+   *  @method  disconnect
+   *  @for p5.AudioIn
+   */
+
+
+  p5.AudioIn.prototype.disconnect = function () {
+    if (this.output) {
+      this.output.disconnect(); 
+
+      this.output.connect(this.amplitude.input);
+    }
+  };
+  /**
+   *  Read the Amplitude (volume level) of an AudioIn. The AudioIn
+   *  class contains its own instance of the Amplitude class to help
+   *  make it easy to get a microphone's volume level. Accepts an
+   *  optional smoothing value (0.0 < 1.0). <em>NOTE: AudioIn must
+   *  .start() before using .getLevel().</em><br/>
+   *
+   *  @method  getLevel
+   *  @for p5.AudioIn
+   *  @param  {Number} [smoothing] Smoothing is 0.0 by default.
+   *                               Smooths values based on previous values.
+   *  @return {Number}           Volume level (between 0.0 and 1.0)
+   */
+
+
+  p5.AudioIn.prototype.getLevel = function (smoothing) {
+    if (smoothing) {
+      this.amplitude.smoothing = smoothing;
+    }
+
+    return this.amplitude.getLevel();
+  };
+  /**
+   *  Set amplitude (volume) of a mic input between 0 and 1.0. <br/>
+   *
+   *  @method  amp
+   *  @for p5.AudioIn
+   *  @param  {Number} vol between 0 and 1.0
+   *  @param {Number} [time] ramp time (optional)
+   */
+
+
+  p5.AudioIn.prototype.amp = function (vol, t) {
+    if (t) {
+      var rampTime = t || 0;
+      var currentVol = this.output.gain.value;
+      this.output.gain.cancelScheduledValues(p5sound.audiocontext.currentTime);
+      this.output.gain.setValueAtTime(currentVol, p5sound.audiocontext.currentTime);
+      this.output.gain.linearRampToValueAtTime(vol, rampTime + p5sound.audiocontext.currentTime);
+    } else {
+      this.output.gain.cancelScheduledValues(p5sound.audiocontext.currentTime);
+      this.output.gain.setValueAtTime(vol, p5sound.audiocontext.currentTime);
+    }
+  };
+  /**
+   * Returns a list of available input sources. This is a wrapper
+   * for <a title="MediaDevices.enumerateDevices() - Web APIs | MDN" target="_blank" href=
+   *  "https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices"
+   *  > and it returns a Promise.
+   *
+   * @method  getSources
+   * @for p5.AudioIn
+   * @param  {Function} [successCallback] This callback function handles the sources when they
+   *                                      have been enumerated. The callback function
+   *                                      receives the deviceList array as its only argument
+   * @param  {Function} [errorCallback] This optional callback receives the error
+   *                                    message as its argument.
+   * @returns {Promise} Returns a Promise that can be used in place of the callbacks, similar
+   *                            to the enumerateDevices() method
+   * @example
+   *  <div><code>
+   *  let audioIn;
+   *
+   *  function setup(){
+   *    text('getting sources...', 0, 20);
+   *    audioIn = new p5.AudioIn();
+   *    audioIn.getSources(gotSources);
+   *  }
+   *
+   *  function gotSources(deviceList) {
+   *    if (deviceList.length > 0) {
+   *      //set the source to the first item in the deviceList array
+   *      audioIn.setSource(0);
+   *      let currentSource = deviceList[audioIn.currentSource];
+   *      text('set source to: ' + currentSource.deviceId, 5, 20, width);
+   *    }
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.AudioIn.prototype.getSources = function (onSuccess, onError) {
+    return new Promise(function (resolve, reject) {
+      window.navigator.mediaDevices.enumerateDevices().then(function (devices) {
+        p5sound.inputSources = devices.filter(function (device) {
+          return device.kind === 'audioinput';
+        });
+        resolve(p5sound.inputSources);
+
+        if (onSuccess) {
+          onSuccess(p5sound.inputSources);
+        }
+      })["catch"](function (error) {
+        reject(error);
+
+        if (onError) {
+          onError(error);
+        } else {
+          console.error('This browser does not support MediaStreamTrack.getSources()');
+        }
+      });
+    });
+  };
+  /**
+   *  Set the input source. Accepts a number representing a
+   *  position in the array returned by getSources().
+   *  This is only available in browsers that support
+   *  <a title="MediaDevices.enumerateDevices() - Web APIs | MDN" target="_blank" href=
+   *  "https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices"
+   *  >navigator.mediaDevices.enumerateDevices()</a>.<br/>
+   *
+   *  @method setSource
+   *  @for p5.AudioIn
+   *  @param {number} num position of input source in the array
+   *  @example
+   *  <div><code>
+   *  let audioIn;
+   *
+   *  function setup(){
+   *    text('getting sources...', 0, 20);
+   *    audioIn = new p5.AudioIn();
+   *    audioIn.getSources(gotSources);
+   *  }
+   *
+   *  function gotSources(deviceList) {
+   *    if (deviceList.length > 0) {
+   *      //set the source to the first item in the deviceList array
+   *      audioIn.setSource(0);
+   *      let currentSource = deviceList[audioIn.currentSource];
+   *      text('set source to: ' + currentSource.deviceId, 5, 20, width);
+   *    }
+   *  }
+   *  </code></div>
+   */
+
+
+  p5.AudioIn.prototype.setSource = function (num) {
+    if (p5sound.inputSources.length > 0 && num < p5sound.inputSources.length) {
+      this.currentSource = num;
+      console.log('set source to ', p5sound.inputSources[this.currentSource]);
+    } else {
+      console.log('unable to set input source');
+    } 
+
+
+    if (this.stream && this.stream.active) {
+      this.start();
+    }
+  }; 
+
+
+  p5.AudioIn.prototype.dispose = function () {
+    var index = p5sound.soundArray.indexOf(this);
+    p5sound.soundArray.splice(index, 1);
+    this.stop();
+
+    if (this.output) {
+      this.output.disconnect();
+    }
+
+    if (this.amplitude) {
+      this.amplitude.disconnect();
+    }
+
+    delete this.amplitude;
+    delete this.output;
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(2),__webpack_require__(52),__webpack_require__(58),__webpack_require__(9)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(i){"use strict";return i.CrossFade=function(e){this.createInsOuts(2,1),this.a=this.input[0]=new i.Gain,this.b=this.input[1]=new i.Gain,this.fade=new i.Signal(this.defaultArg(e,.5),i.Type.NormalRange),this._equalPowerA=new i.EqualPowerGain,this._equalPowerB=new i.EqualPowerGain,this._invert=new i.Expr("1 - $0"),this.a.connect(this.output),this.b.connect(this.output),this.fade.chain(this._equalPowerB,this.b.gain),this.fade.chain(this._invert,this._equalPowerA,this.a.gain),this._readOnly("fade")},i.extend(i.CrossFade),i.CrossFade.prototype.dispose=function(){return i.prototype.dispose.call(this),this._writable("fade"),this._equalPowerA.dispose(),this._equalPowerA=null,this._equalPowerB.dispose(),this._equalPowerB=null,this.fade.dispose(),this.fade=null,this._invert.dispose(),this._invert=null,this.a.dispose(),this.a=null,this.b.dispose(),this.b=null,this},i.CrossFade}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(7),__webpack_require__(16),__webpack_require__(3),__webpack_require__(53),__webpack_require__(26),__webpack_require__(54),__webpack_require__(25),__webpack_require__(55),__webpack_require__(56),__webpack_require__(57)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(p){"use strict";function r(e,n,r){var t=new e;return r._eval(n[0]).connect(t,0,0),r._eval(n[1]).connect(t,0,1),t}function t(e,n,r){var t=new e;return r._eval(n[0]).connect(t,0,0),t}function o(e){return e?parseFloat(e):void 0}function i(e){return e&&e.args?parseFloat(e.args):void 0}return p.Expr=function(){var n=this._replacements(Array.prototype.slice.call(arguments)),e=this._parseInputs(n);this._nodes=[],this.input=new Array(e);for(var r=0;r<e;r++)this.input[r]=this.context.createGain();var t,o=this._parseTree(n);try{t=this._eval(o)}catch(e){throw this._disposeNodes(),new Error("Tone.Expr: Could evaluate expression: "+n)}this.output=t},p.extend(p.Expr,p.SignalBase),p.Expr._Expressions={value:{signal:{regexp:/^\d+\.\d+|^\d+/,method:function(e){return new p.Signal(o(e))}},input:{regexp:/^\$\d/,method:function(e,n){return n.input[o(e.substr(1))]}}},glue:{"(":{regexp:/^\(/},")":{regexp:/^\)/},",":{regexp:/^,/}},func:{abs:{regexp:/^abs/,method:t.bind(this,p.Abs)},mod:{regexp:/^mod/,method:function(e,n){var r=i(e[1]),t=new p.Modulo(r);return n._eval(e[0]).connect(t),t}},pow:{regexp:/^pow/,method:function(e,n){var r=i(e[1]),t=new p.Pow(r);return n._eval(e[0]).connect(t),t}},a2g:{regexp:/^a2g/,method:function(e,n){var r=new p.AudioToGain;return n._eval(e[0]).connect(r),r}}},binary:{"+":{regexp:/^\+/,precedence:1,method:r.bind(this,p.Add)},"-":{regexp:/^\-/,precedence:1,method:function(e,n){return 1===e.length?t(p.Negate,e,n):r(p.Subtract,e,n)}},"*":{regexp:/^\*/,precedence:0,method:r.bind(this,p.Multiply)}},unary:{"-":{regexp:/^\-/,method:t.bind(this,p.Negate)},"!":{regexp:/^\!/,method:t.bind(this,p.NOT)}}},p.Expr.prototype._parseInputs=function(e){var n=e.match(/\$\d/g),r=0;if(null!==n)for(var t=0;t<n.length;t++){var o=parseInt(n[t].substr(1))+1;r=Math.max(r,o)}return r},p.Expr.prototype._replacements=function(e){for(var n=e.shift(),r=0;r<e.length;r++)n=n.replace(/\%/i,e[r]);return n},p.Expr.prototype._tokenize=function(e){for(var n=-1,r=[];0<e.length;){var t=o(e=e.trim());r.push(t),e=e.substr(t.value.length)}function o(e){for(var n in p.Expr._Expressions){var r=p.Expr._Expressions[n];for(var t in r){var o=r[t],i=o.regexp,a=e.match(i);if(null!==a)return{type:n,value:a[0],method:o.method}}}throw new SyntaxError("Tone.Expr: Unexpected token "+e)}return{next:function(){return r[++n]},peek:function(){return r[n+1]}}},p.Expr.prototype._parseTree=function(e){var t=this._tokenize(e),a=this.isUndef.bind(this);function r(e,n){return!a(e)&&"glue"===e.type&&e.value===n}function o(e,n,r){var t=p.Expr._Expressions[n];if(!a(e))for(var o in t){var i=t[o];if(i.regexp.test(e.value)){if(a(r))return!0;if(i.precedence===r)return!0}}return!1}function i(e){var n;a(e)&&(e=5),n=e<0?function e(){var n,r;n=t.peek();if(o(n,"unary"))return n=t.next(),r=e(),{operator:n.value,method:n.method,args:[r]};return s()}():i(e-1);for(var r=t.peek();o(r,"binary",e);)n={operator:(r=t.next()).value,method:r.method,args:[n,i(e-1)]},r=t.peek();return n}function s(){var e,n;if(e=t.peek(),a(e))throw new SyntaxError("Tone.Expr: Unexpected termination of expression");if("func"===e.type)return function(e){var n=[];if(!r(t.next(),"("))throw new SyntaxError('Tone.Expr: Expected ( in a function call "'+e.value+'"');r(t.peek(),")")||(n=function(){var e,n=[];for(;e=i(),!a(e)&&(n.push(e),r(t.peek(),","));)t.next();return n}());if(r(t.next(),")"))return{method:e.method,args:n,name:name};throw new SyntaxError('Tone.Expr: Expected ) in a function call "'+e.value+'"')}(e=t.next());if("value"===e.type)return{method:(e=t.next()).method,args:e.value};if(r(e,"(")){if(t.next(),n=i(),!r(e=t.next(),")"))throw new SyntaxError("Expected )");return n}throw new SyntaxError("Tone.Expr: Parse error, cannot process token "+e.value)}return i()},p.Expr.prototype._eval=function(e){if(!this.isUndef(e)){var n=e.method(e.args,this);return this._nodes.push(n),n}},p.Expr.prototype._disposeNodes=function(){for(var e=0;e<this._nodes.length;e++){var n=this._nodes[e];this.isFunction(n.dispose)?n.dispose():this.isFunction(n.disconnect)&&n.disconnect(),n=null,this._nodes[e]=null}this._nodes=null},p.Expr.prototype.dispose=function(){p.prototype.dispose.call(this),this._disposeNodes()},p.Expr}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(26),__webpack_require__(16),__webpack_require__(2)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(e){"use strict";return e.GreaterThan=function(t){this.createInsOuts(2,0),this._param=this.input[0]=new e.Subtract(t),this.input[1]=this._param.input[1],this._gtz=this.output=new e.GreaterThanZero,this._param.connect(this._gtz)},e.extend(e.GreaterThan,e.Signal),e.GreaterThan.prototype.dispose=function(){return e.prototype.dispose.call(this),this._param.dispose(),this._param=null,this._gtz.dispose(),this._gtz=null,this},e.GreaterThan}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(5),__webpack_require__(19)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(s){"use strict";return s.Abs=function(){this._abs=this.input=this.output=new s.WaveShaper(function(s){return 0===s?0:Math.abs(s)},127)},s.extend(s.Abs,s.SignalBase),s.Abs.prototype.dispose=function(){return s.prototype.dispose.call(this),this._abs.dispose(),this._abs=null,this},s.Abs}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(5),__webpack_require__(3),__webpack_require__(16)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(i){"use strict";return i.Modulo=function(t){this.createInsOuts(1,0),this._shaper=new i.WaveShaper(Math.pow(2,16)),this._multiply=new i.Multiply,this._subtract=this.output=new i.Subtract,this._modSignal=new i.Signal(t),this.input.fan(this._shaper,this._subtract),this._modSignal.connect(this._multiply,0,0),this._shaper.connect(this._multiply,0,1),this._multiply.connect(this._subtract,0,1),this._setWaveShaper(t)},i.extend(i.Modulo,i.SignalBase),i.Modulo.prototype._setWaveShaper=function(i){this._shaper.setMap(function(t){return Math.floor((t+1e-4)/i)})},Object.defineProperty(i.Modulo.prototype,"value",{get:function(){return this._modSignal.value},set:function(t){this._modSignal.value=t,this._setWaveShaper(t)}}),i.Modulo.prototype.dispose=function(){return i.prototype.dispose.call(this),this._shaper.dispose(),this._shaper=null,this._multiply.dispose(),this._multiply=null,this._subtract.dispose(),this._subtract=null,this._modSignal.dispose(),this._modSignal=null,this},i.Modulo}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(t){"use strict";return t.Pow=function(e){this._exp=this.defaultArg(e,1),this._expScaler=this.input=this.output=new t.WaveShaper(this._expFunc(this._exp),8192)},t.extend(t.Pow,t.SignalBase),Object.defineProperty(t.Pow.prototype,"value",{get:function(){return this._exp},set:function(e){this._exp=e,this._expScaler.setMap(this._expFunc(this._exp))}}),t.Pow.prototype._expFunc=function(t){return function(e){return Math.pow(Math.abs(e),t)}},t.Pow.prototype.dispose=function(){return t.prototype.dispose.call(this),this._expScaler.dispose(),this._expScaler=null,this},t.Pow}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(5),__webpack_require__(2)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(n){"use strict";return n.AudioToGain=function(){this._norm=this.input=this.output=new n.WaveShaper(function(n){return(n+1)/2})},n.extend(n.AudioToGain,n.SignalBase),n.AudioToGain.prototype.dispose=function(){return n.prototype.dispose.call(this),this._norm.dispose(),this._norm=null,this},n.AudioToGain}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(0),__webpack_require__(5)], __WEBPACK_AMD_DEFINE_RESULT__ = (function(e){"use strict";return e.EqualPowerGain=function(){this._eqPower=this.input=this.output=new e.WaveShaper(function(e){return Math.abs(e)<.001?0:this.equalPowerScale(e)}.bind(this),4096)},e.extend(e.EqualPowerGain,e.SignalBase),e.EqualPowerGain.prototype.dispose=function(){return e.prototype.dispose.call(this),this._eqPower.dispose(),this._eqPower=null,this},e.EqualPowerGain}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var Effect = __webpack_require__(4);
+
+  var EQFilter = __webpack_require__(60);
+  /**
+   * p5.EQ is an audio effect that performs the function of a multiband
+   * audio equalizer. Equalization is used to adjust the balance of
+   * frequency compoenents of an audio signal. This process is commonly used
+   * in sound production and recording to change the waveform before it reaches
+   * a sound output device. EQ can also be used as an audio effect to create
+   * interesting distortions by filtering out parts of the spectrum. p5.EQ is
+   * built using a chain of Web Audio Biquad Filter Nodes and can be
+   * instantiated with 3 or 8 bands. Bands can be added or removed from
+   * the EQ by directly modifying p5.EQ.bands (the array that stores filters).
+   *
+   * This class extends <a href = "/reference/#/p5.Effect">p5.Effect</a>.
+   * Methods <a href = "/reference/#/p5.Effect/amp">amp()</a>, <a href = "/reference/#/p5.Effect/chain">chain()</a>,
+   * <a href = "/reference/#/p5.Effect/drywet">drywet()</a>, <a href = "/reference/#/p5.Effect/connect">connect()</a>, and
+   * <a href = "/reference/#/p5.Effect/disconnect">disconnect()</a> are available.
+   *
+   * @class p5.EQ
+   * @constructor
+   * @extends p5.Effect
+   * @param {Number} [_eqsize] Constructor will accept 3 or 8, defaults to 3
+   * @return {Object} p5.EQ object
+   *
+   * @example
+   * <div><code>
+   * let eq, soundFile
+   * let eqBandIndex = 0;
+   * let eqBandNames = ['lows', 'mids', 'highs'];
+   *
+   * function preload() {
+   *   soundFormats('mp3', 'ogg');
+   *   soundFile = loadSound('assets/beat');
+   * }
+   *
+   * function setup() {
+   *   let cnv = createCanvas(100, 100);
+   *   cnv.mousePressed(toggleSound);
+   *
+   *   eq = new p5.EQ(eqBandNames.length);
+   *   soundFile.disconnect();
+   *   eq.process(soundFile);
+   * }
+   *
+   * function draw() {
+   *   background(30);
+   *   noStroke();
+   *   fill(255);
+   *   textAlign(CENTER);
+   *   text('filtering ', 50, 25);
+   *
+   *   fill(255, 40, 255);
+   *   textSize(26);
+   *   text(eqBandNames[eqBandIndex], 50, 55);
+   *
+   *   fill(255);
+   *   textSize(9);
+   *
+   *   if (!soundFile.isPlaying()) {
+   *     text('tap to play', 50, 80);
+   *   } else {
+   *     text('tap to filter next band', 50, 80)
+   *   }
+   * }
+   *
+   * function toggleSound() {
+   *   if (!soundFile.isPlaying()) {
+   *     soundFile.play();
+   *   } else {
+   *     eqBandIndex = (eqBandIndex + 1) % eq.bands.length;
+   *   }
+   *
+   *   for (let i = 0; i < eq.bands.length; i++) {
+   *     eq.bands[i].gain(0);
+   *   }
+   *   // filter the band we want to filter
+   *   eq.bands[eqBandIndex].gain(-40);
+   * }
+   * </code></div>
+   */
+
+
+  p5.EQ = function (_eqsize) {
+    Effect.call(this); 
+
+    _eqsize = _eqsize === 3 || _eqsize === 8 ? _eqsize : 3;
+    var factor;
+    _eqsize === 3 ? factor = Math.pow(2, 3) : factor = 2;
+    /**
+      *  The p5.EQ is built with abstracted p5.Filter objects.
+      *  To modify any bands, use methods of the <a
+      *  href="/reference/#/p5.Filter" title="p5.Filter reference">
+      *  p5.Filter</a> API, especially `gain` and `freq`.
+      *  Bands are stored in an array, with indices 0 - 3, or 0 - 7
+      *  @property {Array}  bands
+      *
+    */
+
+    this.bands = [];
+    var freq, res;
+
+    for (var i = 0; i < _eqsize; i++) {
+      if (i === _eqsize - 1) {
+        freq = 21000;
+        res = .01;
+      } else if (i === 0) {
+        freq = 100;
+        res = .1;
+      } else if (i === 1) {
+        freq = _eqsize === 3 ? 360 * factor : 360;
+        res = 1;
+      } else {
+        freq = this.bands[i - 1].freq() * factor;
+        res = 1;
+      }
+
+      this.bands[i] = this._newBand(freq, res);
+
+      if (i > 0) {
+        this.bands[i - 1].connect(this.bands[i].biquad);
+      } else {
+        this.input.connect(this.bands[i].biquad);
+      }
+    }
+
+    this.bands[_eqsize - 1].connect(this.output);
+  };
+
+  p5.EQ.prototype = Object.create(Effect.prototype);
+  /**
+   * Process an input by connecting it to the EQ
+   * @method  process
+   * @param  {Object} src Audio source
+   */
+
+  p5.EQ.prototype.process = function (src) {
+    src.connect(this.input);
+  }; 
+  //   * Set the frequency and gain of each band in the EQ. This method should be
+  //   * called with 3 or 8 frequency and gain pairs, depending on the size of the EQ.
+  //   * ex. eq.set(freq0, gain0, freq1, gain1, freq2, gain2);
+  //   *
+  //   * @method  set
+  //   * @for p5.EQ
+  //   * @param {Number} [freq0] Frequency value for band with index 0
+  //   * @param {Number} [gain0] Gain value for band with index 0
+  //   * @param {Number} [freq1] Frequency value for band with index 1
+  //   * @param {Number} [gain1] Gain value for band with index 1
+  //   * @param {Number} [freq2] Frequency value for band with index 2
+  //   * @param {Number} [gain2] Gain value for band with index 2
+  //   * @param {Number} [freq3] Frequency value for band with index 3
+  //   * @param {Number} [gain3] Gain value for band with index 3
+  //   * @param {Number} [freq4] Frequency value for band with index 4
+  //   * @param {Number} [gain4] Gain value for band with index 4
+  //   * @param {Number} [freq5] Frequency value for band with index 5
+  //   * @param {Number} [gain5] Gain value for band with index 5
+  //   * @param {Number} [freq6] Frequency value for band with index 6
+  //   * @param {Number} [gain6] Gain value for band with index 6
+  //   * @param {Number} [freq7] Frequency value for band with index 7
+  //   * @param {Number} [gain7] Gain value for band with index 7
+  //   */
+
+
+  p5.EQ.prototype.set = function () {
+    if (arguments.length === this.bands.length * 2) {
+      for (var i = 0; i < arguments.length; i += 2) {
+        this.bands[i / 2].freq(arguments[i]);
+        this.bands[i / 2].gain(arguments[i + 1]);
+      }
+    } else {
+      console.error('Argument mismatch. .set() should be called with ' + this.bands.length * 2 + ' arguments. (one frequency and gain value pair for each band of the eq)');
+    }
+  };
+  /**
+   * Add a new band. Creates a p5.Filter and strips away everything but
+   * the raw biquad filter. This method returns an abstracted p5.Filter,
+   * which can be added to p5.EQ.bands, in order to create new EQ bands.
+   * @private
+   * @for p5.EQ
+   * @method  _newBand
+   * @param  {Number} freq
+   * @param  {Number} res
+   * @return {Object}      Abstracted Filter
+   */
+
+
+  p5.EQ.prototype._newBand = function (freq, res) {
+    return new EQFilter(freq, res);
+  };
+
+  p5.EQ.prototype.dispose = function () {
+    Effect.prototype.dispose.apply(this);
+
+    if (this.bands) {
+      while (this.bands.length > 0) {
+        delete this.bands.pop().dispose();
+      }
+
+      delete this.bands;
+    }
+  };
+
+  return p5.EQ;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var Filter = __webpack_require__(15);
+
+  var p5sound = __webpack_require__(1);
+  /**
+   *  EQFilter extends p5.Filter with constraints
+   *  necessary for the p5.EQ
+   *
+   *  @private
+   */
+
+
+  var EQFilter = function EQFilter(freq, res) {
+    Filter.call(this, 'peaking');
+    this.disconnect();
+    this.set(freq, res);
+    this.biquad.gain.value = 0;
+    delete this.input;
+    delete this.output;
+    delete this._drywet;
+    delete this.wet;
+  };
+
+  EQFilter.prototype = Object.create(Filter.prototype);
+
+  EQFilter.prototype.amp = function () {
+    console.warn('`amp()` is not available for p5.EQ bands. Use `.gain()`');
+  };
+
+  EQFilter.prototype.drywet = function () {
+    console.warn('`drywet()` is not available for p5.EQ bands.');
+  };
+
+  EQFilter.prototype.connect = function (unit) {
+    var u = unit || p5.soundOut.input;
+
+    if (this.biquad) {
+      this.biquad.connect(u.input ? u.input : u);
+    } else {
+      this.output.connect(u.input ? u.input : u);
+    }
+  };
+
+  EQFilter.prototype.disconnect = function () {
+    if (this.biquad) {
+      this.biquad.disconnect();
+    }
+  };
+
+  EQFilter.prototype.dispose = function () {
+    var index = p5sound.soundArray.indexOf(this);
+    p5sound.soundArray.splice(index, 1);
+    this.disconnect();
+    delete this.biquad;
+  };
+
+  return EQFilter;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var p5sound = __webpack_require__(1);
+
+  var Effect = __webpack_require__(4);
+  /**
+   * Panner3D is based on the <a title="Web Audio Panner docs"  href=
+   * "https://developer.mozilla.org/en-US/docs/Web/API/PannerNode">
+   * Web Audio Spatial Panner Node</a>.
+   * This panner is a spatial processing node that allows audio to be positioned
+   * and oriented in 3D space.
+   *
+   * The position is relative to an <a title="Web Audio Listener docs" href=
+   * "https://developer.mozilla.org/en-US/docs/Web/API/AudioListener">
+   * Audio Context Listener</a>, which can be accessed
+   * by <code>p5.soundOut.audiocontext.listener</code>
+   *
+   *
+   * @class p5.Panner3D
+   * @constructor
+   */
+
+
+  p5.Panner3D = function () {
+    Effect.call(this);
+    /**
+     *  <a title="Web Audio Panner docs"  href=
+     *  "https://developer.mozilla.org/en-US/docs/Web/API/PannerNode">
+     *  Web Audio Spatial Panner Node</a>
+     *
+     *  Properties include
+     *    -  <a title="w3 spec for Panning Model"
+     *    href="https://www.w3.org/TR/webaudio/#idl-def-PanningModelType"
+     *    >panningModel</a>: "equal power" or "HRTF"
+     *    -  <a title="w3 spec for Distance Model"
+     *    href="https://www.w3.org/TR/webaudio/#idl-def-DistanceModelType"
+     *    >distanceModel</a>: "linear", "inverse", or "exponential"
+     *
+     *  @property {AudioNode} panner
+     *
+     */
+
+    this.panner = this.ac.createPanner();
+    this.panner.panningModel = 'HRTF';
+    this.panner.distanceModel = 'linear';
+    this.panner.connect(this.output);
+    this.input.connect(this.panner);
+  };
+
+  p5.Panner3D.prototype = Object.create(Effect.prototype);
+  /**
+   * Connect an audio sorce
+   *
+   * @method  process
+   * @for p5.Panner3D
+   * @param  {Object} src Input source
+   */
+
+  p5.Panner3D.prototype.process = function (src) {
+    src.connect(this.input);
+  };
+  /**
+   * Set the X,Y,Z position of the Panner
+   * @method set
+   * @for p5.Panner3D
+   * @param  {Number} xVal
+   * @param  {Number} yVal
+   * @param  {Number} zVal
+   * @param  {Number} time
+   * @return {Array}      Updated x, y, z values as an array
+   */
+
+
+  p5.Panner3D.prototype.set = function (xVal, yVal, zVal, time) {
+    this.positionX(xVal, time);
+    this.positionY(yVal, time);
+    this.positionZ(zVal, time);
+    return [this.panner.positionX.value, this.panner.positionY.value, this.panner.positionZ.value];
+  };
+  /**
+   * Getter and setter methods for position coordinates
+   * @method positionX
+   * @for p5.Panner3D
+   * @return {Number}      updated coordinate value
+   */
+
+  /**
+   * Getter and setter methods for position coordinates
+   * @method positionY
+   * @for p5.Panner3D
+   * @return {Number}      updated coordinate value
+   */
+
+  /**
+   * Getter and setter methods for position coordinates
+   * @method positionZ
+   * @for p5.Panner3D
+   * @return {Number}      updated coordinate value
+   */
+
+
+  p5.Panner3D.prototype.positionX = function (xVal, time) {
+    var t = time || 0;
+
+    if (typeof xVal === 'number') {
+      this.panner.positionX.value = xVal;
+      this.panner.positionX.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.panner.positionX.linearRampToValueAtTime(xVal, this.ac.currentTime + 0.02 + t);
+    } else if (xVal) {
+      xVal.connect(this.panner.positionX);
+    }
+
+    return this.panner.positionX.value;
+  };
+
+  p5.Panner3D.prototype.positionY = function (yVal, time) {
+    var t = time || 0;
+
+    if (typeof yVal === 'number') {
+      this.panner.positionY.value = yVal;
+      this.panner.positionY.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.panner.positionY.linearRampToValueAtTime(yVal, this.ac.currentTime + 0.02 + t);
+    } else if (yVal) {
+      yVal.connect(this.panner.positionY);
+    }
+
+    return this.panner.positionY.value;
+  };
+
+  p5.Panner3D.prototype.positionZ = function (zVal, time) {
+    var t = time || 0;
+
+    if (typeof zVal === 'number') {
+      this.panner.positionZ.value = zVal;
+      this.panner.positionZ.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.panner.positionZ.linearRampToValueAtTime(zVal, this.ac.currentTime + 0.02 + t);
+    } else if (zVal) {
+      zVal.connect(this.panner.positionZ);
+    }
+
+    return this.panner.positionZ.value;
+  };
+  /**
+   * Set the X,Y,Z position of the Panner
+   * @method  orient
+   * @for p5.Panner3D
+   * @param  {Number} xVal
+   * @param  {Number} yVal
+   * @param  {Number} zVal
+   * @param  {Number} time
+   * @return {Array}      Updated x, y, z values as an array
+   */
+
+
+  p5.Panner3D.prototype.orient = function (xVal, yVal, zVal, time) {
+    this.orientX(xVal, time);
+    this.orientY(yVal, time);
+    this.orientZ(zVal, time);
+    return [this.panner.orientationX.value, this.panner.orientationY.value, this.panner.orientationZ.value];
+  };
+  /**
+   * Getter and setter methods for orient coordinates
+   * @method orientX
+   * @for p5.Panner3D
+   * @return {Number}      updated coordinate value
+   */
+
+  /**
+   * Getter and setter methods for orient coordinates
+   * @method orientY
+   * @for p5.Panner3D
+   * @return {Number}      updated coordinate value
+   */
+
+  /**
+   * Getter and setter methods for orient coordinates
+   * @method orientZ
+   * @for p5.Panner3D
+   * @return {Number}      updated coordinate value
+   */
+
+
+  p5.Panner3D.prototype.orientX = function (xVal, time) {
+    var t = time || 0;
+
+    if (typeof xVal === 'number') {
+      this.panner.orientationX.value = xVal;
+      this.panner.orientationX.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.panner.orientationX.linearRampToValueAtTime(xVal, this.ac.currentTime + 0.02 + t);
+    } else if (xVal) {
+      xVal.connect(this.panner.orientationX);
+    }
+
+    return this.panner.orientationX.value;
+  };
+
+  p5.Panner3D.prototype.orientY = function (yVal, time) {
+    var t = time || 0;
+
+    if (typeof yVal === 'number') {
+      this.panner.orientationY.value = yVal;
+      this.panner.orientationY.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.panner.orientationY.linearRampToValueAtTime(yVal, this.ac.currentTime + 0.02 + t);
+    } else if (yVal) {
+      yVal.connect(this.panner.orientationY);
+    }
+
+    return this.panner.orientationY.value;
+  };
+
+  p5.Panner3D.prototype.orientZ = function (zVal, time) {
+    var t = time || 0;
+
+    if (typeof zVal === 'number') {
+      this.panner.orientationZ.value = zVal;
+      this.panner.orientationZ.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.panner.orientationZ.linearRampToValueAtTime(zVal, this.ac.currentTime + 0.02 + t);
+    } else if (zVal) {
+      zVal.connect(this.panner.orientationZ);
+    }
+
+    return this.panner.orientationZ.value;
+  };
+  /**
+   * Set the rolloff factor and max distance
+   * @method  setFalloff
+   * @for p5.Panner3D
+   * @param {Number} [maxDistance]
+   * @param {Number} [rolloffFactor]
+   */
+
+
+  p5.Panner3D.prototype.setFalloff = function (maxDistance, rolloffFactor) {
+    this.maxDist(maxDistance);
+    this.rolloff(rolloffFactor);
+  };
+  /**
+   * Maxium distance between the source and the listener
+   * @method  maxDist
+   * @for p5.Panner3D
+   * @param  {Number} maxDistance
+   * @return {Number} updated value
+   */
+
+
+  p5.Panner3D.prototype.maxDist = function (maxDistance) {
+    if (typeof maxDistance === 'number') {
+      this.panner.maxDistance = maxDistance;
+    }
+
+    return this.panner.maxDistance;
+  };
+  /**
+   * How quickly the volume is reduced as the source moves away from the listener
+   * @method  rollof
+   * @for p5.Panner3D
+   * @param  {Number} rolloffFactor
+   * @return {Number} updated value
+   */
+
+
+  p5.Panner3D.prototype.rolloff = function (rolloffFactor) {
+    if (typeof rolloffFactor === 'number') {
+      this.panner.rolloffFactor = rolloffFactor;
+    }
+
+    return this.panner.rolloffFactor;
+  };
+
+  p5.Panner3D.dispose = function () {
+    Effect.prototype.dispose.apply(this);
+
+    if (this.panner) {
+      this.panner.disconnect();
+      delete this.panner;
+    }
+  };
+
+  return p5.Panner3D;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+ }),
+ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function (require) {
+  var p5sound = __webpack_require__(1);
+
+  var Effect = __webpack_require__(4); 
+  //   * listener is a class that can construct both a Spatial Panner
+  //   * and a Spatial Listener. The panner is based on the 
+  //   * Web Audio Spatial Panner Node
+  //   * https://www.w3.org/TR/webaudio/#the-listenernode-interface
+  //   * This panner is a spatial processing node that allows audio to be positioned
+  //   * and oriented in 3D space. 
+  //   *
+  //   * The Listener modifies the properties of the Audio Context Listener. 
+  //   * Both objects types use the same methods. The default is a spatial panner.
+  //   *
+  //   * <code>p5.Panner3D</code> - Constructs a Spatial Panner<br/>
+  //   * <code>p5.Listener3D</code> - Constructs a Spatial Listener<br/>
+  //   *
+  //   * @class listener
+  //   * @constructor
+  //   * @return {Object} p5.Listener3D Object
+  //   *
+  //   * @param {Web Audio Node} listener Web Audio Spatial Panning Node
+  //   * @param {AudioParam} listener.panningModel "equal power" or "HRTF"
+  //   * @param {AudioParam} listener.distanceModel "linear", "inverse", or "exponential"
+  //   * @param {String} [type] [Specify construction of a spatial panner or listener]
+  //   */
+
+
+  p5.Listener3D = function (type) {
+    this.ac = p5sound.audiocontext;
+    this.listener = this.ac.listener;
+  }; 
+  //   * Connect an audio sorce
+  //   * @param  {Object} src Input source
+  //   */
+
+
+  p5.Listener3D.prototype.process = function (src) {
+    src.connect(this.input);
+  }; 
+  //   * Set the X,Y,Z position of the Panner
+  //   * @param  {[Number]} xVal
+  //   * @param  {[Number]} yVal
+  //   * @param  {[Number]} zVal
+  //   * @param  {[Number]} time
+  //   * @return {[Array]}      [Updated x, y, z values as an array]
+  //   */
+
+
+  p5.Listener3D.prototype.position = function (xVal, yVal, zVal, time) {
+    this.positionX(xVal, time);
+    this.positionY(yVal, time);
+    this.positionZ(zVal, time);
+    return [this.listener.positionX.value, this.listener.positionY.value, this.listener.positionZ.value];
+  }; 
+  //   * Getter and setter methods for position coordinates
+  //   * @return {Number}      [updated coordinate value]
+  //   */
+
+
+  p5.Listener3D.prototype.positionX = function (xVal, time) {
+    var t = time || 0;
+
+    if (typeof xVal === 'number') {
+      this.listener.positionX.value = xVal;
+      this.listener.positionX.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.positionX.linearRampToValueAtTime(xVal, this.ac.currentTime + 0.02 + t);
+    } else if (xVal) {
+      xVal.connect(this.listener.positionX);
+    }
+
+    return this.listener.positionX.value;
+  };
+
+  p5.Listener3D.prototype.positionY = function (yVal, time) {
+    var t = time || 0;
+
+    if (typeof yVal === 'number') {
+      this.listener.positionY.value = yVal;
+      this.listener.positionY.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.positionY.linearRampToValueAtTime(yVal, this.ac.currentTime + 0.02 + t);
+    } else if (yVal) {
+      yVal.connect(this.listener.positionY);
+    }
+
+    return this.listener.positionY.value;
+  };
+
+  p5.Listener3D.prototype.positionZ = function (zVal, time) {
+    var t = time || 0;
+
+    if (typeof zVal === 'number') {
+      this.listener.positionZ.value = zVal;
+      this.listener.positionZ.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.positionZ.linearRampToValueAtTime(zVal, this.ac.currentTime + 0.02 + t);
+    } else if (zVal) {
+      zVal.connect(this.listener.positionZ);
+    }
+
+    return this.listener.positionZ.value;
+  }; 
+  //   * Overrides the listener orient() method because Listener has slightly
+  //   * different params. In human terms, Forward vectors are the direction the 
+  //   * nose is pointing. Up vectors are the direction of the top of the head.
+  //   *
+  //   * @method orient
+  //   * @param  {Number} xValF  Forward vector X direction
+  //   * @param  {Number} yValF  Forward vector Y direction
+  //   * @param  {Number} zValF  Forward vector Z direction
+  //   * @param  {Number} xValU  Up vector X direction
+  //   * @param  {Number} yValU  Up vector Y direction
+  //   * @param  {Number} zValU  Up vector Z direction
+  //   * @param  {Number} time  
+  //   * @return {Array}       All orienation params
+  //   */
+
+
+  p5.Listener3D.prototype.orient = function (xValF, yValF, zValF, xValU, yValU, zValU, time) {
+    if (arguments.length === 3 || arguments.length === 4) {
+      time = arguments[3];
+      this.orientForward(xValF, yValF, zValF, time);
+    } else if (arguments.length === 6 || arguments === 7) {
+      this.orientForward(xValF, yValF, zValF);
+      this.orientUp(xValU, yValU, zValU, time);
+    }
+
+    return [this.listener.forwardX.value, this.listener.forwardY.value, this.listener.forwardZ.value, this.listener.upX.value, this.listener.upY.value, this.listener.upZ.value];
+  };
+
+  p5.Listener3D.prototype.orientForward = function (xValF, yValF, zValF, time) {
+    this.forwardX(xValF, time);
+    this.forwardY(yValF, time);
+    this.forwardZ(zValF, time);
+    return [this.listener.forwardX, this.listener.forwardY, this.listener.forwardZ];
+  };
+
+  p5.Listener3D.prototype.orientUp = function (xValU, yValU, zValU, time) {
+    this.upX(xValU, time);
+    this.upY(yValU, time);
+    this.upZ(zValU, time);
+    return [this.listener.upX, this.listener.upY, this.listener.upZ];
+  }; 
+  //   * Getter and setter methods for orient coordinates
+  //   * @return {Number}      [updated coordinate value]
+  //   */
+
+
+  p5.Listener3D.prototype.forwardX = function (xVal, time) {
+    var t = time || 0;
+
+    if (typeof xVal === 'number') {
+      this.listener.forwardX.value = xVal;
+      this.listener.forwardX.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.forwardX.linearRampToValueAtTime(xVal, this.ac.currentTime + 0.02 + t);
+    } else if (xVal) {
+      xVal.connect(this.listener.forwardX);
+    }
+
+    return this.listener.forwardX.value;
+  };
+
+  p5.Listener3D.prototype.forwardY = function (yVal, time) {
+    var t = time || 0;
+
+    if (typeof yVal === 'number') {
+      this.listener.forwardY.value = yVal;
+      this.listener.forwardY.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.forwardY.linearRampToValueAtTime(yVal, this.ac.currentTime + 0.02 + t);
+    } else if (yVal) {
+      yVal.connect(this.listener.forwardY);
+    }
+
+    return this.listener.forwardY.value;
+  };
+
+  p5.Listener3D.prototype.forwardZ = function (zVal, time) {
+    var t = time || 0;
+
+    if (typeof zVal === 'number') {
+      this.listener.forwardZ.value = zVal;
+      this.listener.forwardZ.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.forwardZ.linearRampToValueAtTime(zVal, this.ac.currentTime + 0.02 + t);
+    } else if (zVal) {
+      zVal.connect(this.listener.forwardZ);
+    }
+
+    return this.listener.forwardZ.value;
+  };
+
+  p5.Listener3D.prototype.upX = function (xVal, time) {
+    var t = time || 0;
+
+    if (typeof xVal === 'number') {
+      this.listener.upX.value = xVal;
+      this.listener.upX.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.upX.linearRampToValueAtTime(xVal, this.ac.currentTime + 0.02 + t);
+    } else if (xVal) {
+      xVal.connect(this.listener.upX);
+    }
+
+    return this.listener.upX.value;
+  };
+
+  p5.Listener3D.prototype.upY = function (yVal, time) {
+    var t = time || 0;
+
+    if (typeof yVal === 'number') {
+      this.listener.upY.value = yVal;
+      this.listener.upY.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.upY.linearRampToValueAtTime(yVal, this.ac.currentTime + 0.02 + t);
+    } else if (yVal) {
+      yVal.connect(this.listener.upY);
+    }
+
+    return this.listener.upY.value;
+  };
+
+  p5.Listener3D.prototype.upZ = function (zVal, time) {
+    var t = time || 0;
+
+    if (typeof zVal === 'number') {
+      this.listener.upZ.value = zVal;
+      this.listener.upZ.cancelScheduledValues(this.ac.currentTime + 0.01 + t);
+      this.listener.upZ.linearRampToValueAtTime(zVal, this.ac.currentTime + 0.02 + t);
+    } else if (zVal) {
+      zVal.connect(
