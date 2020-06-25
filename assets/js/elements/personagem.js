@@ -1,31 +1,37 @@
 
 class Personagem extends Animacao {
 
-    constructor(matriz, imagem, x, largura, altura, larguraSprite, alturaSprite) {
-        super(matriz, imagem, x, largura, altura, larguraSprite, alturaSprite)
+    constructor(matriz, imagem, x, variacaoY, largura, altura, larguraSprite, alturaSprite) {
+        super(matriz, imagem, x, variacaoY, largura, altura, larguraSprite, alturaSprite)
 
-        this.yInicial = height - this.altura
-        this.y = this.yInicial
+        this.chao = height - this.altura - this.variacaoY
+        this.y = this.chao
 
         this.velocidadeDoPulo = 0
-        this.gravidade = 9
+        this.gravidade = 3
+        this.alturaDoPulo = -30
+        this.pulos = 0
     }
 
     pular() {
-        this.velocidadeDoPulo = - 50
+        if (this.pulos < 2) {
+            this.velocidadeDoPulo = this.alturaDoPulo
+            this.pulos++
+        }
     }
     
     aplicarGravidade() {
         this.y += this.velocidadeDoPulo
         this.velocidadeDoPulo += this.gravidade
 
-        if (this.y > this.yInicial) {
-            this.y = this.yInicial
+        if (this.y > this.chao) {
+            this.y = this.chao
+            this.pulos = 0
         }
     }
 
     verificarColisao(inimigo) {
-        const precisao = .7
+        const precisao = .6
         const colisao = collideRectRect(
             this.x, this.y,
             this.largura * precisao, 
