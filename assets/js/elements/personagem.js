@@ -8,8 +8,8 @@ class Personagem extends Animacao {
         this.y = this.chao
 
         this.velocidadeDoPulo = 0
-        this.gravidade = 3
-        this.alturaDoPulo = -30
+        this.gravidade = 4
+        this.alturaDoPulo = -42
         this.pulos = 0
     }
 
