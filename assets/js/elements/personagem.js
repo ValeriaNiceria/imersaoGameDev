@@ -14,6 +14,9 @@ class Personagem extends Animacao {
         this.acabouDeColidir = false
 
         this.precisao = precisao
+
+        this.passos = 60
+        this.posicaoInicial = this.x
     }
 
     atualizarAcabouDeColidir() {
@@ -29,7 +32,15 @@ class Personagem extends Animacao {
             this.pulos++
         }
     }
+
+    ir() {
+        this.x = this.x + this.passos
+    }
     
+    voltar() {
+        this.x = this.x - this.passos
+    }
+
     aplicarGravidade() {
         this.y += this.velocidadeDoPulo
         this.velocidadeDoPulo += this.gravidade

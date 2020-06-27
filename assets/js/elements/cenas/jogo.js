@@ -9,7 +9,10 @@ class Jogo {
         cenario = new Cenario(imagemCenario, 3)
         pontuacao = new Pontuacao()
 
-        vida = new Vida(3, 3)
+        vida = new Vida(
+            fita.configuracoes.vidaMaxima, 
+            fita.configuracoes.vidaInicial
+        )
 
         personagem = new Personagem(
             matrizPersonagem,
