@@ -1,5 +1,7 @@
 
 function preload() {
+    fita = loadJSON('elements/fita/fita.json')
+
     imagemCenario = loadImage('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/img/cenario/floresta.png')
     imagemTelaInicial = loadImage('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/img/assets/telaInicial.png')
     fonteTelaInicial = loadFont('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/img/assets/fonteTelaInicial.otf')
@@ -8,6 +10,7 @@ function preload() {
     imagemInimigoGrande = loadImage('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/img/inimigos/troll.png')
     imagemInimigoVoador = loadImage('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/img/inimigos/gotinha-voadora.png')
     imagemGameOver = loadImage('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/img/assets/game-over.png')
+    imagemVida = loadImage('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/img/assets/coracao.png')
     somDoJogo = loadSound('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/music/trilha_jogo.mp3')
     somDoPulo = loadSound('https://raw.githubusercontent.com/ValeriaNiceria/imersaoGameDev/master/assets/music/somPulo.mp3')
     // imagemCenario = loadImage('assets/img/cenario/floresta.png')
@@ -18,6 +21,7 @@ function preload() {
     // imagemInimigoGrande = loadImage('assets/img/inimigos/troll.png')
     // imagemInimigoVoador = loadImage('assets/img/inimigos/gotinha-voadora.png')
     // imagemGameOver = loadImage('assets/img/assets/game-over.png')
+    // imagemVida = loadImage('assets/img/assets/coracao.png')
     // somDoJogo = loadSound('assets/music/trilha_jogo.mp3')
     // somDoPulo = loadSound('assets/music/somPulo.mp3')
 }

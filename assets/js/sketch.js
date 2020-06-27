@@ -19,6 +19,8 @@ function setup() {
         width / 2,
         height / 2
     )
+
+    
 }
 
 function keyPressed() {

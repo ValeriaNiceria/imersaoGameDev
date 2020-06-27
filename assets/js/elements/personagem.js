@@ -1,7 +1,7 @@
 
 class Personagem extends Animacao {
 
-    constructor(matriz, imagem, x, variacaoY, largura, altura, larguraSprite, alturaSprite) {
+    constructor(matriz, imagem, x, variacaoY, largura, altura, larguraSprite, alturaSprite, precisao) {
         super(matriz, imagem, x, variacaoY, largura, altura, larguraSprite, alturaSprite)
 
         this.chao = height - this.altura - this.variacaoY
@@ -11,6 +11,16 @@ class Personagem extends Animacao {
         this.gravidade = 4
         this.alturaDoPulo = -42
         this.pulos = 0
+        this.acabouDeColidir = false
+
+        this.precisao = precisao
+    }
+
+    atualizarAcabouDeColidir() {
+        this.acabouDeColidir = true
+        setTimeout(() => {
+            this.acabouDeColidir = false
+        }, 1000)
     }
 
     pular() {
@@ -31,16 +41,22 @@ class Personagem extends Animacao {
     }
 
     verificarColisao(inimigo) {
-        const precisao = .6
-        const colisao = collideRectRect(
-            this.x, this.y,
-            this.largura * precisao, 
-            this.altura * precisao,
-            inimigo.x, inimigo.y,
-            inimigo.largura * precisao, 
-            inimigo.altura * precisao
-        )
 
-        return colisao 
+        if (this.acabouDeColidir) {
+            return false
+        } else {
+            const precisao = this.precisao
+            const colisao = collideRectRect(
+                this.x, this.y,
+                this.largura * precisao, 
+                this.altura * precisao,
+                inimigo.x, inimigo.y,
+                inimigo.largura * precisao, 
+                inimigo.altura * precisao
+            )
+    
+            return colisao 
+        }
+        
     }
 }

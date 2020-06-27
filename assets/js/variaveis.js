@@ -1,4 +1,5 @@
 
+let fita
 let jogo
 let telaInicial
 let fonteTelaInicial
@@ -8,6 +9,7 @@ let imagemInimigo
 let imagemInimigoGrande
 let imagemInimigoVoador
 let imagemGameOver
+let imagemVida
 
 let cenario
 let personagem
@@ -15,6 +17,7 @@ let somDoJogo
 let somDoPulo
 let pontuacao
 let botao
+let vida
 
 const matrizInimigo = [
     [0, 0],
